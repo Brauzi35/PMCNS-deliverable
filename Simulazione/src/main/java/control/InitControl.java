@@ -40,7 +40,7 @@ import java.text.*;
     class Msq {
         static double START   = 0.0;            /* initial (open the door)        */
         static double STOP    = 20000.0;        /* terminal (close the door) time */
-        static int    SERVERS = 4;              /* number of servers              */
+        static int    SERVERS = 200;              /* number of servers              */
 
         static double sarrival = START;
 
@@ -153,13 +153,21 @@ import java.text.*;
             return (a + (b - a) * r.random());
         }
 
+        double poisson(double lambda, Rngs r) {
+            return (-Math.log(1.0 - r.random()) / lambda);
+        }
+
+
+
         double getArrival(Rngs r) {
             /* --------------------------------------------------------------
              * generate the next arrival time, with rate 1/2
              * --------------------------------------------------------------
+             * Per un centralino di un call center di grandi dimensioni, il tasso di arrivo potrebbe essere più elevato,
+             * ad esempio intorno a 10-20 chiamate al minuto, corrispondente a λ = 0.167-0.333 chiamate al secondo.
              */
             r.selectStream(0);
-            sarrival += exponential(2.0, r);
+            sarrival += poisson( 20, r);
             return (sarrival);
         }
 
@@ -170,7 +178,7 @@ import java.text.*;
              * ------------------------------
              */
             r.selectStream(1);
-            return (uniform(2.0, 10.0, r));
+            return (uniform(2, 10.0, r));
         }
 
         int nextEvent(MsqEvent [] event) {
