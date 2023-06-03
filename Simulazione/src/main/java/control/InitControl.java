@@ -58,7 +58,7 @@ import java.text.*;
             Rngs r = new Rngs();
             r.plantSeeds(0);
 
-
+            //array di msqEvent e msqSum
             MsqEvent [] event = new MsqEvent [SERVERS + 1];
             MsqSum [] sum = new MsqSum [SERVERS + 1];
             for (s = 0; s < SERVERS + 1; s++) {
