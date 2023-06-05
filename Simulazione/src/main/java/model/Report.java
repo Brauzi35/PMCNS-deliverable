@@ -2,16 +2,19 @@ package model;
 
 /**
  * Astrazione delle richieste di riparazione guasto linea fissa: inizialmente vengono istanziate
- * solo con tempo di arrivo in coda, classe di tariffa (privato-2, pubblico-1 e business-0)
+ * solo con tempo di arrivo in coda; in maniera iterativa saranno aggiunte le altre statistiche utili alla fine
  */
 public class Report {
 
     private double arrivalTime;
-    private int priority;
+    private double firstDepartureTime;
+    private double dispatcherArrivalTime;
+    private double dispatcherDepartureTime;
+    private double repairArrivalTime;
+    private double repairedTime;
 
-    public Report(double arrivalTime, int priority) {
+    public Report(double arrivalTime) {
         this.arrivalTime = arrivalTime;
-        this.priority = priority;
     }
 
     public double getArrivalTime() {
@@ -22,11 +25,43 @@ public class Report {
         this.arrivalTime = arrivalTime;
     }
 
-    public int getPriority() {
-        return priority;
+    public double getFirstDepartureTime() {
+        return firstDepartureTime;
     }
 
-    public void setPriority(int priority) {
-        this.priority = priority;
+    public void setFirstDepartureTime(double firstDepartureTime) {
+        this.firstDepartureTime = firstDepartureTime;
+    }
+
+    public double getDispatcherArrivalTime() {
+        return dispatcherArrivalTime;
+    }
+
+    public void setDispatcherArrivalTime(double dispatcherArrivalTime) {
+        this.dispatcherArrivalTime = dispatcherArrivalTime;
+    }
+
+    public double getDispatcherDepartureTime() {
+        return dispatcherDepartureTime;
+    }
+
+    public void setDispatcherDepartureTime(double dispatcherDepartureTime) {
+        this.dispatcherDepartureTime = dispatcherDepartureTime;
+    }
+
+    public double getRepairArrivalTime() {
+        return repairArrivalTime;
+    }
+
+    public void setRepairArrivalTime(double repairArrivalTime) {
+        this.repairArrivalTime = repairArrivalTime;
+    }
+
+    public double getRepairedTime() {
+        return repairedTime;
+    }
+
+    public void setRepairedTime(double repairedTime) {
+        this.repairedTime = repairedTime;
     }
 }

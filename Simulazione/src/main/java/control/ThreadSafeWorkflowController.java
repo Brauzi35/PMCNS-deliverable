@@ -1,22 +1,31 @@
 package control;
 
 import utils.Rngs;
+import utils.TimeSimulator;
 
-import java.util.Random;
+import java.sql.Time;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
-public class SharedQueueExample {
+public class ThreadSafeWorkflowController {
+
     private static final int QUEUE_CAPACITY = Integer.MAX_VALUE/100;
 
     static double START   = 0.0;            /* initial (open the door)        */
     static double STOP    = 20000.0;        /* terminal (close the door) time */
     static int    SERVERS = 200;              /* number of servers              */
+    static int    DISPATCHERS = 1;
 
-    //static double sarrival = START;
+    static Rngs r = new Rngs();
+
 
     public static void main(String[] args) {
 
+
+
+        Msq m = new Msq(); //call center utilities
+        Ssq3 ssq3 = new Ssq3(); //dispatcher utilities
+        r.plantSeeds(0);
 
 
         // Creazione delle code condivise tra i thread
@@ -25,21 +34,19 @@ public class SharedQueueExample {
         BlockingQueue<MsqEvent> queueBD = new ArrayBlockingQueue<>(QUEUE_CAPACITY);
 
         // Creazione dei thread
-        Thread threadA = new Thread(new ProducerThread(queueAB), "Thread A");
-        Thread threadB = new Thread(new DispatcherThread(queueAB, queueBC, queueBD), "Thread B");
-        Thread threadC = new Thread(new ConsumerThread(queueBC), "Thread C");
-        Thread threadD = new Thread(new ConsumerThread(queueBD), "Thread D");
+        Thread threadA = new Thread(new SharedQueueExample.ProducerThread(queueAB), "Thread A");
+        Thread threadB = new Thread(new SharedQueueExample.DispatcherThread(queueAB, queueBC, queueBD), "Thread B");
+        Thread threadC = new Thread(new SharedQueueExample.ConsumerThread(queueBC), "Thread C");
+        Thread threadD = new Thread(new SharedQueueExample.ConsumerThread(queueBD), "Thread D");
 
         // Avvio dei thread
         threadA.start();
         threadB.start();
-        threadC.start();
-        threadD.start();
+        //threadC.start();
+        //threadD.start();
     }
 
     // Thread produttore (Thread A) call center
-
-
     static class ProducerThread implements Runnable {
         private final BlockingQueue<MsqEvent> sharedQueue;
 
@@ -57,8 +64,7 @@ public class SharedQueueExample {
             double service;
 
             Msq m = new Msq();
-            Rngs r = new Rngs();
-            r.plantSeeds(0);
+
 
             //array di msqEvent e msqSum
             MsqEvent [] event = new MsqEvent [SERVERS + 1];
@@ -68,9 +74,9 @@ public class SharedQueueExample {
                 sum [s]  = new MsqSum();
             }
 
-            MsqT t = new MsqT();
+            TimeSimulator t = new TimeSimulator();
 
-            t.current    = START;
+            t.setCurrent(START);
             event[0].t   = m.getArrival(r);
             event[0].x   = 1;
             for (s = 1; s <= SERVERS; s++) {
@@ -82,9 +88,9 @@ public class SharedQueueExample {
 
             while ((event[0].x != 0) || (number != 0)) {
                 e         = m.nextEvent(event);                /* next event index */
-                t.next    = event[e].t;                        /* next event time  */
-                area     += (t.next - t.current) * number;     /* update integral  */
-                t.current = t.next;                            /* advance the clock*/
+                t.setNext(event[e].t);                         /* next event time  */
+                area     += (t.getNext() - t.getCurrent()) * number;     /* update integral  */
+                t.setCurrent(t.getNext());                            /* advance the clock*/
 
                 if (e == 0) {                                  /* process an arrival*/
                     number++;
@@ -96,13 +102,13 @@ public class SharedQueueExample {
                         s               = m.findOne(event);
                         sum[s].service += service;
                         sum[s].served++;
-                        event[s].t      = t.current + service;
+                        event[s].t      = t.getCurrent() + service;
                         event[s].x      = 1;
                         event[s].report.setFirstDepartureTime(service);
                     }
                 }
                 else {                                         /* process a departure */
-                    sharedQueue.add(event[e]);              //add in shared queue
+                    sharedQueue.add(event[e]);              //add in shared queue A
                     index++;                                     /* from server s       */
                     number--;
                     s                 = e;
@@ -110,7 +116,7 @@ public class SharedQueueExample {
                         service         = m.getService(r);
                         sum[s].service += service;
                         sum[s].served++;
-                        event[s].t      = t.current + service;
+                        event[s].t      = t.getCurrent() + service;
                     }
                     else
                         event[s].x      = 0;
@@ -137,56 +143,40 @@ public class SharedQueueExample {
         @Override
         public void run() {
             try {
+                long   number = 0;             /* number in the node                 */
+                int    e;                      /* next event index                   */
+                int    s;                      /* server index                       */
+                long   index  = 0;             /* used to count processed jobs       */
+                double area   = 0.0;           /* time integrated number in the node */
+                double service;
+
+                Msq m = new Msq();
+
+
+                //array di msqEvent e msqSum
+                MsqSum [] sum = new MsqSum [DISPATCHERS + 1];
+                MsqEvent [] services = new MsqEvent [SERVERS + 1];
+                for (s = 0; s < DISPATCHERS + 1; s++) {
+                    sum [s]  = new MsqSum();
+                    services [s] = new MsqEvent();
+                }
+
+                TimeSimulator t = new TimeSimulator();
+                t.setCurrent(START);
+
+
                 // Consumo degli oggetti MsqEvent
-                while (true) {
-                    MsqEvent event = inputQueue.take();
-                    processEvent(event);
-                    double rand = Math.random();
-                    if (rand < 0.7) {
-                        outputQueue1.put(event);
-                    }
-                    else {
-                        outputQueue2.put(event);
-                    }
+                while (t.getCurrent()<STOP) {
+                    MsqEvent currentInput = inputQueue.take();
+
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
         }
 
-        private void processEvent(MsqEvent event) {
-            //todo
-
-
-        }
 
     }
 
-    // Thread consumatore (Thread C, D) riparazione
-    static class ConsumerThread implements Runnable {
-        private final BlockingQueue<MsqEvent> inputQueue;
 
-        public ConsumerThread(BlockingQueue<MsqEvent> inputQueue) {
-            this.inputQueue = inputQueue;
-
-        }
-
-        @Override
-        public void run() {
-            try {
-                // Consumo degli oggetti MsqEvent
-                while (true) {
-                    MsqEvent event = inputQueue.take();
-                    processEvent(event);
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
-
-        // Metodo di elaborazione degli oggetti MsqEvent
-        private void processEvent(MsqEvent event) {
-            System.out.println("entrato nel thread consumer" + event.t);
-        }
-    }
 }

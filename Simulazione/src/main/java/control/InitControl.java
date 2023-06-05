@@ -14,6 +14,7 @@ package control;
      * -------------------------------------------------------------------------
      */
 
+import model.Report;
 import utils.Rngs;
 
 import java.lang.*;
@@ -34,13 +35,14 @@ import java.text.*;
     class MsqEvent{                     /* the next-event list    */
         double t;                         /*   next event time      */
         int    x;                         /*   event status, 0 or 1 */
+        Report report;
     }
 
 
     class Msq {
         static double START   = 0.0;            /* initial (open the door)        */
         static double STOP    = 20000.0;        /* terminal (close the door) time */
-        static int    SERVERS = 200;              /* number of servers              */
+        static int    SERVERS = 20;              /* number of servers              */
 
         static double sarrival = START;
 
@@ -89,7 +91,7 @@ import java.text.*;
                     event[0].t        = m.getArrival(r);
                     if (event[0].t > STOP)
                         event[0].x      = 0;
-                    if (number <= SERVERS) {
+                    if (number <= SERVERS) { //vede se c'è posto in un server!
                         service         = m.getService(r);
                         s               = m.findOne(event);
                         sum[s].service += service;
@@ -155,6 +157,13 @@ import java.text.*;
 
         double poisson(double lambda, Rngs r) {
             return (-Math.log(1.0 - r.random()) / lambda);
+        }
+
+        /* lognormal is used in service time for call center */
+        double logNormal(double m, double s, Rngs r){
+            //m is mean, s is standard deviation
+            double x = r.random();
+            return Math.exp(-0.5 * Math.pow((Math.log(x) - m / s),2))/ (s * Math.sqrt(2 * Math.PI) * x);
         }
 
 
