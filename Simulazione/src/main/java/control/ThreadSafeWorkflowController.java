@@ -24,7 +24,6 @@ public class ThreadSafeWorkflowController {
 
 
         Msq m = new Msq(); //call center utilities
-        Ssq3 ssq3 = new Ssq3(); //dispatcher utilities
         r.plantSeeds(0);
 
 
