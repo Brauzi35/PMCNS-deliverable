@@ -224,9 +224,11 @@ public class ThreadSafeWorkflowController {
 
 
                 //array di msqEvent e msqSum
-                MsqSum [] sum = new MsqSum [DISPATCHERS + 1];
-                MsqEvent [] services = new MsqEvent [DISPATCHERS + 1]; //appena cambiato, prima era servers
-                for (s = 0; s < DISPATCHERS + 1; s++) {
+                //servers deve cambiare, non è ammissibile che ci siano tanti operatori di centralino
+                //quanti tecnici on field
+                MsqSum [] sum = new MsqSum [SERVERS + 1];
+                MsqEvent [] services = new MsqEvent [SERVERS + 1]; //appena cambiato, prima era servers
+                for (s = 0; s < SERVERS + 1; s++) {
                     sum [s]  = new MsqSum();
                     services [s] = new MsqEvent();
                 }
