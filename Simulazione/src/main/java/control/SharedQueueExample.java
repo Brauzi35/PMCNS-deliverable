@@ -79,8 +79,10 @@ public class SharedQueueExample {
                 sum[s].service = 0.0;
                 sum[s].served  = 0;
             }
+            System.out.println("thread 1 prima del while");
 
             while ((event[0].x != 0) || (number != 0)) {
+                System.out.println("thread 1 dentro while");
                 e         = m.nextEvent(event);                /* next event index */
                 t.next    = event[e].t;                        /* next event time  */
                 area     += (t.next - t.current) * number;     /* update integral  */
@@ -98,10 +100,10 @@ public class SharedQueueExample {
                         sum[s].served++;
                         event[s].t      = t.current + service;
                         event[s].x      = 1;
-                        event[s].report.setFirstDepartureTime(service);
                     }
                 }
                 else {                                         /* process a departure */
+                    System.out.println("thread 1 dentro else");
                     sharedQueue.add(event[e]);              //add in shared queue
                     index++;                                     /* from server s       */
                     number--;

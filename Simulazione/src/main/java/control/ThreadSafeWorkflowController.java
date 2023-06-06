@@ -34,8 +34,8 @@ public class ThreadSafeWorkflowController {
         BlockingQueue<MsqEvent> queueBD = new ArrayBlockingQueue<>(QUEUE_CAPACITY);
 
         // Creazione dei thread
-        Thread threadA = new Thread(new SharedQueueExample.ProducerThread(queueAB), "Thread A");
-        Thread threadB = new Thread(new SharedQueueExample.DispatcherThread(queueAB, queueBC, queueBD), "Thread B");
+        Thread threadA = new Thread(new ThreadSafeWorkflowController.ProducerThread(queueAB), "Thread A");
+        Thread threadB = new Thread(new ThreadSafeWorkflowController.DispatcherThread(queueAB, queueBC, queueBD), "Thread B");
         Thread threadC = new Thread(new SharedQueueExample.ConsumerThread(queueBC), "Thread C");
         Thread threadD = new Thread(new SharedQueueExample.ConsumerThread(queueBD), "Thread D");
 
@@ -86,13 +86,16 @@ public class ThreadSafeWorkflowController {
                 sum[s].served  = 0;
             }
 
+            System.out.println("thread 1 prima del while");
+
             while ((event[0].x != 0) || (number != 0)) {
                 e         = m.nextEvent(event);                /* next event index */
                 t.setNext(event[e].t);                         /* next event time  */
                 area     += (t.getNext() - t.getCurrent()) * number;     /* update integral  */
                 t.setCurrent(t.getNext());                            /* advance the clock*/
 
-                if (e == 0) {                                  /* process an arrival*/
+                if (e == 0) {
+                    //System.out.println("thread 1 dentro while if e==0");/* process an arrival*/
                     number++;
                     event[0].t        = m.getArrival(r);
                     if (event[0].t > STOP)
@@ -104,10 +107,10 @@ public class ThreadSafeWorkflowController {
                         sum[s].served++;
                         event[s].t      = t.getCurrent() + service;
                         event[s].x      = 1;
-                        event[s].report.setFirstDepartureTime(service);
                     }
                 }
                 else {                                         /* process a departure */
+                    //System.out.println("thread 1 dentro while dentro else");
                     sharedQueue.add(event[e]);              //add in shared queue A
                     index++;                                     /* from server s       */
                     number--;
@@ -155,7 +158,75 @@ public class ThreadSafeWorkflowController {
 
                 //array di msqEvent e msqSum
                 MsqSum [] sum = new MsqSum [DISPATCHERS + 1];
-                MsqEvent [] services = new MsqEvent [SERVERS + 1];
+                MsqEvent [] services = new MsqEvent [DISPATCHERS + 1]; //appena cambiato, prima era servers
+                for (s = 0; s < DISPATCHERS + 1; s++) {
+                    sum [s]  = new MsqSum();
+                    services [s] = new MsqEvent();
+                }
+
+                TimeSimulator t = new TimeSimulator();
+                t.setCurrent(START);
+                Rngs rngs2 = new Rngs();
+                rngs2.plantSeeds(r.getSeed());
+                rngs2.selectStream(3);
+
+                // Consumo degli oggetti MsqEvent
+                while (t.getCurrent()<STOP) {
+                    //System.out.println("thread 2 dopo del while " + t.getCurrent());
+                    MsqEvent currentInput = inputQueue.take();
+                    if(currentInput.t > t.getCurrent()){
+                        /*
+                        se l'evento corrente di arrivo ha un tempo maggiore di quello corrente del
+                        clock allora dobbiamo settare il valore corrente del clock a quello dell'evento di
+                        arrivo: ciò significa che l'iesimo job è arrivato al dispatcher quando il nodo era idle
+                        */
+                        t.setCurrent(t.getCurrent() + currentInput.t); //evento arrivo al dispatcher
+                    }
+
+                    t.setCurrent(t.getCurrent() + m.getService(rngs2)); //evento completamento dispatcher
+
+                    System.out.println("fatto il dispatching di un job arrivato a: " + currentInput.t +
+                            " e uscito a: " + t.getCurrent());
+
+                    int mod = (int)currentInput.t%10;
+                    if(mod<7){
+                        outputQueue1.put(currentInput);
+                    }
+                    else{
+                        outputQueue2.put(currentInput);
+                    }
+                }
+
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+
+    }
+
+    static class OnFieldThread implements Runnable{
+        private final BlockingQueue<MsqEvent> inputQueue;
+
+        public OnFieldThread(BlockingQueue<MsqEvent> inputQueue){
+            this.inputQueue = inputQueue;
+        }
+        @Override
+        public void run() {
+            try {
+                long   number = 0;             /* number in the node                 */
+                int    e;                      /* next event index                   */
+                int    s;                      /* server index                       */
+                long   index  = 0;             /* used to count processed jobs       */
+                double area   = 0.0;           /* time integrated number in the node */
+                double service;
+
+                Msq m = new Msq();
+
+
+                //array di msqEvent e msqSum
+                MsqSum [] sum = new MsqSum [DISPATCHERS + 1];
+                MsqEvent [] services = new MsqEvent [DISPATCHERS + 1]; //appena cambiato, prima era servers
                 for (s = 0; s < DISPATCHERS + 1; s++) {
                     sum [s]  = new MsqSum();
                     services [s] = new MsqEvent();
@@ -164,19 +235,20 @@ public class ThreadSafeWorkflowController {
                 TimeSimulator t = new TimeSimulator();
                 t.setCurrent(START);
 
-
-                // Consumo degli oggetti MsqEvent
                 while (t.getCurrent()<STOP) {
+                    //System.out.println("thread 2 dopo del while " + t.getCurrent());
                     MsqEvent currentInput = inputQueue.take();
-
                 }
-            } catch (InterruptedException e) {
+
+            }catch (InterruptedException e){
                 Thread.currentThread().interrupt();
             }
+
         }
 
-
     }
+
+
 
 
 }

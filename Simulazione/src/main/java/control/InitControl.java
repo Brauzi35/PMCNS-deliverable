@@ -14,7 +14,6 @@ package control;
      * -------------------------------------------------------------------------
      */
 
-import model.Report;
 import utils.Rngs;
 
 import java.lang.*;
@@ -35,7 +34,6 @@ import java.text.*;
     class MsqEvent{                     /* the next-event list    */
         double t;                         /*   next event time      */
         int    x;                         /*   event status, 0 or 1 */
-        Report report;
     }
 
 
