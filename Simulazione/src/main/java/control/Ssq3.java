@@ -1,9 +1,8 @@
 package control;
+import org.apache.commons.math3.distribution.LogNormalDistribution;
 import utils.Rngs;
 
-import org.apache.commons.math3.distribution.LogNormalDistribution;
 
-import java.io.*;
 import java.lang.*;
 import java.text.*;
 
