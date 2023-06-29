@@ -1,6 +1,7 @@
 package control;
 
 
+import org.apache.commons.math3.distribution.LogNormalDistribution;
 import utils.MathUtils;
 import utils.Rngs;
 
@@ -84,7 +85,7 @@ class Simulation {
                 }
                 if (number == 1) {
                     t.completion = t.current + s.getService(r);
-                    t.leaving = t.current + s.getAbandon(r);
+                    //t.leaving = t.current + s.getAbandon(r);
                 }
                 //System.out.println(" arr is: " + number +" leav is: " + number +" number is: " + number +);
             }
@@ -104,7 +105,7 @@ class Simulation {
             }
 
             else {                                        /* process a completion */
-                //System.out.println(" tempo compl = "+  t.completion);
+                System.out.println(" tempo compl = "+  t.completion);
 
                 index++;
                 number--;
@@ -145,13 +146,26 @@ class Simulation {
         return (a + (b - a) * r.random());
     }
 
+    double logNormal(double mu){
+
+        double stdDev = mu * 0.3; // dev = mu * CV, nei call center possiamo assumere un valore costante di deviazione pari al 30%
+
+
+        LogNormalDistribution logNormalDistribution = new LogNormalDistribution(mu, stdDev);
+
+        System.out.println("STO IN LOGNORMAL");
+        System.out.println(logNormalDistribution.sample());
+
+        return logNormalDistribution.sample();
+    }
+
     double getArrival(Rngs r) {
         /* ---------------------------------------------
          * generate the next arrival time, with rate 1/2
          * ---------------------------------------------
          */
         r. selectStream(0);
-        sarrival += exponential(2.0, r);
+        sarrival += exponential(3.2, r);
         return (sarrival);
     }
 
@@ -167,7 +181,8 @@ class Simulation {
          * --------------------------------------------
          */
         r. selectStream(2);
-        return (uniform(1.0, 2.0, r));
+        //return (uniform(1.0, 2.0, r));
+        return (logNormal(8)); //passo solo la media, poi calcolo la deviazione standard
     }
 
 }

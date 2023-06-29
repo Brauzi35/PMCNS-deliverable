@@ -5,6 +5,9 @@ import java.io.*;
 import java.lang.*;
 import java.text.*;
 
+import static java.lang.Math.exp;
+import static java.lang.Math.sqrt;
+
 
 class Ssq3Are {
     double node;                    /* time integrated number in the node  */
@@ -74,6 +77,7 @@ class Ssq3 {
             }
             else {                                        /* process a completion */
                 index++;
+                System.out.println("PORCO");
                 number--;
                 if (number > 0)
                     t.completion = t.current + s.getService(r);
@@ -111,13 +115,30 @@ class Ssq3 {
         return (a + (b - a) * r.random());
     }
 
+<<<<<<< Updated upstream
+=======
+    double logNormal(double mu, Rngs r){
+
+        double s = mu * 0.3; // dev = mu * CV, nei call center possiamo assumere un valore costante di deviazione pari al 30%
+
+
+        LogNormalDistribution logNormalDistribution = new LogNormalDistribution(mu, s);
+
+        double val = Math.exp(-0.5 * Math.pow((Math.log(r.random()*1000000 - mu) / s),2)) / (s * sqrt(2 * 3.14) * r.random());
+        System.out.println(r.random()*1000000 - mu);
+        //System.out.println("STO IN LOGNORMAL");
+        //System.out.println(logNormalDistribution.sample());
+
+        return val;
+    }
+>>>>>>> Stashed changes
     double getArrival(Rngs r) {
         /* ---------------------------------------------
          * generate the next arrival time, with rate 1/2
          * ---------------------------------------------
          */
         r. selectStream(0);
-        sarrival += exponential(2.0, r);
+        sarrival += exponential(3.2, r);
         return (sarrival);
     }
 
@@ -128,7 +149,12 @@ class Ssq3 {
          * --------------------------------------------
          */
         r. selectStream(1);
+<<<<<<< Updated upstream
         return (uniform(1.0, 2.0, r));
+=======
+        //return (uniform(1.0, 2.0, r));
+        return (logNormal(525, r)); //example values
+>>>>>>> Stashed changes
     }
 
 }
