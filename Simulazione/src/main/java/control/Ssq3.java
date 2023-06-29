@@ -1,6 +1,8 @@
 package control;
 import utils.Rngs;
 
+import org.apache.commons.math3.distribution.LogNormalDistribution;
+
 import java.io.*;
 import java.lang.*;
 import java.text.*;
@@ -111,6 +113,12 @@ class Ssq3 {
         return (a + (b - a) * r.random());
     }
 
+    double logNormal(double mu, double sigma){
+
+        LogNormalDistribution logNormalDistribution = new LogNormalDistribution(mu, sigma);
+
+        return logNormalDistribution.sample();
+    }
     double getArrival(Rngs r) {
         /* ---------------------------------------------
          * generate the next arrival time, with rate 1/2
@@ -128,7 +136,8 @@ class Ssq3 {
          * --------------------------------------------
          */
         r. selectStream(1);
-        return (uniform(1.0, 2.0, r));
+        //return (uniform(1.0, 2.0, r));
+        return (logNormal(0.02,.5)); //example values
     }
 
 }
