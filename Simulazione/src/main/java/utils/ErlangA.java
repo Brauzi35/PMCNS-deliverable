@@ -225,8 +225,8 @@ public class ErlangA {
      */
     public static void getAbandonmentProb(int n, double lam, double mu, double meanWaitinTime, double meanPatience){
         //        int n = 20;
-        //        double lam = 19.0;
-        //        double mu = 1;
+        //        double lam = 19.0; arrival rate
+        //        double mu = 1; service rate
         //        double theta = 0.000001;
 
 
@@ -239,10 +239,10 @@ public class ErlangA {
     }
 
     public static void main(String[] args) throws Exception {
-        int n = 20;
-        double lam = 19.0;
-        double mu = 1;
-        double theta = 0.000001;
+        int n = 4;
+        double lam = 2;//0.05194;
+        double mu = 3.91;
+        double theta = 0.000001; //tasso di abbandono
         ErlangA er = new ErlangA(n, lam, mu, theta);
 
 
