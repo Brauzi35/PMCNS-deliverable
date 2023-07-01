@@ -38,12 +38,14 @@ class Msq {
     public static void main(String[] args) {
 
         long   number = 0;             /* number in the node                 */
+        long   numberDispatcher = 0;   /* number in dispathcer               */
         int    e;                      /* next event index                   */
         int    s;                      /* server index                       */
         long   index  = 0;             /* used to count processed jobs       */
         long   abandon = 0;
         double area   = 0.0;           /* time integrated number in the node */
         double service;
+        double dispatched = 0;         /* number of dispatched tickets       */
 
         Msq m = new Msq();
         Rngs r = new Rngs();
@@ -52,9 +54,9 @@ class Msq {
         List<Double> abandons = new ArrayList<Double>(); //lista abbandoni
 
 
-        MsqEvent [] event = new MsqEvent [SERVERS + 2];
-        MsqSum [] sum = new MsqSum [SERVERS + 2];
-        for (s = 0; s < SERVERS + 2; s++) { //prima era +1, ne ho messo un altro per gli abbandoni
+        MsqEvent [] event = new MsqEvent [SERVERS + 2 + 2]; //il secondo + 2 indica gli eventi di arrivo e completamento per il dispatcher
+        MsqSum [] sum = new MsqSum [SERVERS + 2 + 2];
+        for (s = 0; s < SERVERS + 2 + 2; s++) { //prima era +1, ne ho messo un altro per gli abbandoni
             event[s] = new MsqEvent();
             sum [s]  = new MsqSum();
         }
@@ -65,19 +67,21 @@ class Msq {
         t.current    = START;
         event[0].t   = m.getArrival(r);
         event[0].x   = 1;
-        for (s = 1; s <= SERVERS; s++) { //servers + 1?
+        for (s = 1; s <= SERVERS + 2; s++) { //messo il + 2 perchè ho aggiunto il dispatcher?
             event[s].t     = START;          /* this value is arbitrary because */
             event[s].x     = 0;              /* all servers are initially idle  */
             sum[s].service = 0.0;
             sum[s].served  = 0;
         }
 
-        while ((event[0].x != 0) || (number != 0)) {
+
+//cambiata condizione while
+        while ((event[0].x != 0) || (number + numberDispatcher != 0)) {
 
             //System.out.println("number is "+number);
-            System.out.println("stato server con number a: " + number);
+            System.out.println("stato server con number a: " + number + " e dispatcher number a: " + numberDispatcher);
             System.out.println("abbandoni: "+abandons);
-            for(int i = 2; i<SERVERS+2; i++) {
+            for(int i = 2; i<SERVERS+4; i++) {
 
                 System.out.println(i+ " - " +event[i].x + " time: " + event[i].t);
             }
@@ -133,12 +137,47 @@ class Msq {
                 }
             }
 
+            else if(e == SERVERS + 2){ //arrivo dispatcher
+                numberDispatcher++; //incremento contatore 
+                event[SERVERS + 2].x = 0; //non può esserci un altro arrivo al dispatcher senza che ci
+                //sia un' altra partenza dal centralino
+                //se number dispatcher è >= 1 dopo l'incremento, vuol dire che ho il server idle
+                if (numberDispatcher >= 1) {
+                    //e quindi faccio il servizio = spawn evento completamento dispatcher
+                    sum[SERVERS + 3].served++;
+                    sum[SERVERS + 3].service += 5; //il tempo di servizio è discreto a 5 secondi
+                    event[SERVERS + 3].t = t.current + 5;
+                    event[SERVERS + 3].x = 1; //completamento dispatcher eleggibile per next event
+                }
+
+            }
+
+            else if(e == SERVERS + 3){//departure dispatcher
+                numberDispatcher--;
+                dispatched++;
+
+                if (numberDispatcher >= 1) { //se ho coda
+                    //riprocesso un servizio spawnando un nuovo evento di completamento
+                    sum[SERVERS + 3].served++;
+                    sum[SERVERS + 3].service += 5; //il tempo di servizio è discreto a 5 secondi
+                    event[SERVERS + 3].t = t.current + 5;
+
+
+                }
+                else{
+                    event[SERVERS + 3].x = 0; // se non c'è coda il prossimo evento non può certamente essere un completamento nel dispathcher
+                }
+
+
+            }
+
             else {                                         /* process a callcenter departure */
                 System.out.println("entrato in departures");
                 index++;                                     /* from server s       */
                 number--;
                 s                 = e; //indice next event = server id
-
+                event[SERVERS + 2].t = t.current; //invio ticket al dispatcher
+                event[SERVERS + 2].x = 1; //arrivo dispatcher elegibile per next event
 
                 if(!abandons.isEmpty()) {
                     abandons.remove(0);
@@ -174,6 +213,8 @@ class Msq {
         System.out.println("  avg delay .......... =   " + f.format(area / index));
         System.out.println("  avg # in queue ..... =   " + f.format(area / t.current));
         System.out.println("  abandons ........... =   " + abandon);
+        System.out.println("  il dispathcer ha servito ticket =   " + dispatched + " per un tempo" +
+                " totale di: " + sum[SERVERS + 3].service);
         System.out.println("\nthe server statistics are:\n");
         System.out.println("    server     utilization     avg service      share");
         for (s = 2; s <= SERVERS+1; s++) {
@@ -240,7 +281,7 @@ class Msq {
         while (event[i].x == 0)       /* find the index of the first 'active' */
             i++;                        /* element in the event list            */
         e = i;
-        while (i < SERVERS+1) {      //messo +1   /* now, check the others to find which  */
+        while (i < SERVERS+3) {      //messo +1, ora +3 /* now, check the others to find which  */
             i++;                        /* event type is most imminent          */
             if ((event[i].x == 1) && (event[i].t < event[e].t))
                 e = i;
@@ -269,6 +310,7 @@ class Msq {
         }
         return (s);
     }
+
 
 
 
