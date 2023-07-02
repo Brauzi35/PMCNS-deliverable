@@ -101,7 +101,16 @@ class Msq {
             //System.out.println("number is "+number);
             System.out.println("stato server con number a: " + number + " e dispatcher number a: " + numberDispatcher);
             System.out.println("abbandoni: "+abandons);
-            for(int i = 2; i<SERVERS+4; i++) { //todo
+            System.out.println("abbandoni alta: "+abandonsRH);
+            System.out.println("abbandoni media: "+abandonsRM);
+            System.out.println("abbandoni bassa: "+abandonsRL);
+
+            for(int i = 2; i<SERVERS+4; i++) {
+
+                System.out.println(i+ " - " +event[i].x + " time: " + event[i].t);
+            }
+
+            for(int i = SERVERS+7; i<SERVERS+7+SERVERS_REMOTI; i++) {
 
                 System.out.println(i+ " - " +event[i].x + " time: " + event[i].t);
             }
@@ -470,7 +479,7 @@ class Msq {
         while (event[i].x == 0)       /* find the index of the first 'active' */
             i++;                        /* element in the event list            */
         e = i;
-        while (i < SERVERS+3) {      //messo +1, ora +3 /* now, check the others to find which  */
+        while (i < SERVERS+3+3+3+SERVERS_REMOTI) {      //messo +1, ora +3 /* now, check the others to find which  */
             i++;                        /* event type is most imminent          */
             if ((event[i].x == 1) && (event[i].t < event[e].t))
                 e = i;
