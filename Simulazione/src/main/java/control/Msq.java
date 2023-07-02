@@ -9,6 +9,7 @@ import java.io.*;
 import java.lang.*;
 import java.text.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -142,6 +143,7 @@ class Msq {
             }
             //sarebbe meglio farlo dentro gli arrivi //todo
             if(!abandons.isEmpty()){
+
                 event[1].t = abandons.get(0);
                 event[1].x = 1;
             }
@@ -150,6 +152,7 @@ class Msq {
             }
 
             if(!abandonsRH.isEmpty()){
+                int minIndex = abandonsRH.indexOf(Collections.min(abandonsRH));
                 event[SERVERS + 7 + SERVERS_REMOTI + 0].t = abandonsRH.get(0);
                 event[SERVERS + 7 + SERVERS_REMOTI + 0].x = 1;
             }
@@ -224,6 +227,7 @@ class Msq {
                     System.out.println("arrivo di un job messo in coda e numero di job nel nodo = " + number);
                     double at = m.getAbandon(r) + t.current;
                     abandons.add(at);
+                    Collections.sort(abandons);
                 }
             }
 
@@ -336,6 +340,7 @@ class Msq {
                     System.out.println("genero abbandono bassa");
                     double at = m.getAbandon(r) + t.current;
                     abandonsRL.add(at);
+                    Collections.sort(abandonsRL);
                 }
 
             }
@@ -362,6 +367,7 @@ class Msq {
                     System.out.println("genero abbandono media");
                     double at = m.getAbandon(r) + t.current;
                     abandonsRM.add(at);
+                    Collections.sort(abandonsRM);
                 }
 
             }
@@ -386,6 +392,7 @@ class Msq {
                     System.out.println("genero abbandono alta");
                     double at = m.getAbandon(r) + t.current;
                     abandonsRH.add(at);
+                    Collections.sort(abandonsRH);
                 }
 
             }
@@ -483,6 +490,7 @@ class Msq {
                     System.out.println("genero abbandono bassa");
                     double at = m.getAbandon(r) + t.current;
                     abandonsFL.add(at);
+                    Collections.sort(abandonsFL);
                 }
 
             }
@@ -509,6 +517,7 @@ class Msq {
                     System.out.println("genero abbandono bassa");
                     double at = m.getAbandon(r) + t.current;
                     abandonsFM.add(at);
+                    Collections.sort(abandonsFM);
                 }
 
             }
@@ -535,6 +544,7 @@ class Msq {
                     System.out.println("genero abbandono bassa");
                     double at = m.getAbandon(r) + t.current;
                     abandonsFH.add(at);
+                    Collections.sort(abandonsFH);
                 }
 
             }
