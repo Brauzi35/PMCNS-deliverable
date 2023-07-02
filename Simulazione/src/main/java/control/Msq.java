@@ -144,7 +144,7 @@ class Msq {
             //sarebbe meglio farlo dentro gli arrivi //todo
             if(!abandons.isEmpty()){
 
-                event[1].t = abandons.get(0);
+                event[1].t = abandons.get(abandons.indexOf(Collections.min(abandons)));
                 event[1].x = 1;
             }
             else{
@@ -152,22 +152,21 @@ class Msq {
             }
 
             if(!abandonsRH.isEmpty()){
-                int minIndex = abandonsRH.indexOf(Collections.min(abandonsRH));
-                event[SERVERS + 7 + SERVERS_REMOTI + 0].t = abandonsRH.get(0);
+                event[SERVERS + 7 + SERVERS_REMOTI + 0].t = abandonsRH.get(abandonsRH.indexOf(Collections.min(abandonsRH)));
                 event[SERVERS + 7 + SERVERS_REMOTI + 0].x = 1;
             }
             else{
                 event[SERVERS + 7 + SERVERS_REMOTI + 0].x = 0;
             }
             if(!abandonsRM.isEmpty()){
-                event[SERVERS + 7 + SERVERS_REMOTI + 1].t = abandonsRM.get(0);
+                event[SERVERS + 7 + SERVERS_REMOTI + 1].t = abandonsRM.get(abandonsRM.indexOf(Collections.min(abandonsRM)));
                 event[SERVERS + 7 + SERVERS_REMOTI + 1].x = 1;
             }
             else{
                 event[SERVERS + 7 + SERVERS_REMOTI + 1].x = 0;
             }
             if(!abandonsRL.isEmpty()){
-                event[SERVERS + 7 + SERVERS_REMOTI + 2].t = abandonsRL.get(0);
+                event[SERVERS + 7 + SERVERS_REMOTI + 2].t = abandonsRL.get(abandonsRL.indexOf(Collections.min(abandonsRL)));
                 event[SERVERS + 7 + SERVERS_REMOTI + 2].x = 1;
             }
             else{
@@ -175,21 +174,21 @@ class Msq {
             }
 
             if(!abandonsFH.isEmpty()){
-                event[SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 1].t = abandonsFH.get(0);
+                event[SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 1].t = abandonsFH.get(abandonsFH.indexOf(Collections.min(abandonsFH)));
                 event[SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 1].x = 1;
             }
             else{
                 event[SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 1].x = 0;
             }
             if(!abandonsFM.isEmpty()){
-                event[SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 2].t = abandonsFM.get(0);
+                event[SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 2].t = abandonsFM.get(abandonsFM.indexOf(Collections.min(abandonsFM)));
                 event[SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 2].x = 1;
             }
             else{
                 event[SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 2].x = 0;
             }
             if(!abandonsFL.isEmpty()){
-                event[SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 3].t = abandonsFL.get(0);
+                event[SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 3].t = abandonsFL.get(abandonsFL.indexOf(Collections.min(abandonsFL)));
                 event[SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 3].x = 1;
             }
             else{
@@ -227,7 +226,6 @@ class Msq {
                     System.out.println("arrivo di un job messo in coda e numero di job nel nodo = " + number);
                     double at = m.getAbandon(r) + t.current;
                     abandons.add(at);
-                    Collections.sort(abandons);
                 }
             }
 
@@ -236,7 +234,7 @@ class Msq {
                 System.out.println("entrato in abandons");
                 number--;
                 abandon++;
-                abandons.remove(0); //tolgo job dalla lista
+                abandons.remove(abandons.indexOf(Collections.min(abandons))); //tolgo job dalla lista
                 if(abandons.isEmpty()){
                     event[1].x = 0;
                 }
@@ -262,8 +260,9 @@ class Msq {
                 numberDispatcher--;
                 dispatched++;
                 System.out.println("entrato in partenze dispatcher");
-                double rnd = Math.random(); //mi dice se il job va on field oppure va remoto
-                double priority = Math.random();
+                r.selectStream(10);
+                double rnd = r.random(); //mi dice se il job va on field oppure va remoto
+                double priority = r.random();
                 if(rnd<-1.0){ //in remoto era 0.8
                     System.out.println("entrato ramo remoto");
                     if(priority < 0.0095){ //alta priorità
@@ -340,7 +339,6 @@ class Msq {
                     System.out.println("genero abbandono bassa");
                     double at = m.getAbandon(r) + t.current;
                     abandonsRL.add(at);
-                    Collections.sort(abandonsRL);
                 }
 
             }
@@ -367,7 +365,6 @@ class Msq {
                     System.out.println("genero abbandono media");
                     double at = m.getAbandon(r) + t.current;
                     abandonsRM.add(at);
-                    Collections.sort(abandonsRM);
                 }
 
             }
@@ -392,7 +389,6 @@ class Msq {
                     System.out.println("genero abbandono alta");
                     double at = m.getAbandon(r) + t.current;
                     abandonsRH.add(at);
-                    Collections.sort(abandonsRH);
                 }
 
             }
@@ -401,7 +397,7 @@ class Msq {
                 System.out.println("entrato in abbandono coda alta priorità");
                 remoto--;
                 abandonRH++;
-                abandonsRH.remove(0); //tolgo job dalla lista
+                abandonsRH.remove(abandonsRH.indexOf(Collections.min(abandonsRH))); //tolgo job dalla lista
                 if(abandonsRH.isEmpty()){
                     event[SERVERS + 7 + SERVERS_REMOTI].x = 0;
                 }
@@ -411,7 +407,7 @@ class Msq {
                 System.out.println("entrato in abbandono coda media priorità");
                 remoto--;
                 abandonRM++;
-                abandonsRM.remove(0); //tolgo job dalla lista
+                abandonsRM.remove(abandonsRM.indexOf(Collections.min(abandonsRM))); //tolgo job dalla lista
                 if(abandonsRM.isEmpty()){
                     event[SERVERS + 7 + SERVERS_REMOTI + 1].x = 0;
                 }
@@ -421,7 +417,7 @@ class Msq {
                 System.out.println("entrato in abbandono coda bassa priorità");
                 remoto--;
                 abandonRL++;
-                abandonsRL.remove(0); //tolgo job dalla lista
+                abandonsRL.remove(abandonsRL.indexOf(Collections.min(abandonsRL))); //tolgo job dalla lista
                 if(abandonsRL.isEmpty()){
                     event[SERVERS + 7 + SERVERS_REMOTI + 2].x = 0;
                 }
@@ -490,7 +486,6 @@ class Msq {
                     System.out.println("genero abbandono bassa");
                     double at = m.getAbandon(r) + t.current;
                     abandonsFL.add(at);
-                    Collections.sort(abandonsFL);
                 }
 
             }
@@ -517,7 +512,6 @@ class Msq {
                     System.out.println("genero abbandono bassa");
                     double at = m.getAbandon(r) + t.current;
                     abandonsFM.add(at);
-                    Collections.sort(abandonsFM);
                 }
 
             }
@@ -544,7 +538,6 @@ class Msq {
                     System.out.println("genero abbandono bassa");
                     double at = m.getAbandon(r) + t.current;
                     abandonsFH.add(at);
-                    Collections.sort(abandonsFH);
                 }
 
             }
@@ -554,7 +547,7 @@ class Msq {
                 field--;
                 System.out.println("ho decrementato field a: " + field);
                 abandonFL++;
-                abandonsFL.remove(0); //tolgo job dalla lista
+                abandonsFL.remove(abandonsFL.indexOf(Collections.min(abandonsFL))); //tolgo job dalla lista
                 if(abandonsFL.isEmpty()){
                     event[SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 1].x = 0;
                 }
@@ -565,7 +558,7 @@ class Msq {
                 field--;
                 System.out.println("ho decrementato field a: " + field);
                 abandonFM++;
-                abandonsFM.remove(0); //tolgo job dalla lista
+                abandonsFM.remove(abandonsFM.indexOf(Collections.min(abandonsFM))); //tolgo job dalla lista
                 if(abandonsFM.isEmpty()){
                     event[SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 2].x = 0;
                 }
@@ -576,7 +569,7 @@ class Msq {
                 field--;
                 System.out.println("ho decrementato field a: " + field);
                 abandonFH++;
-                abandonsFH.remove(0); //tolgo job dalla lista
+                abandonsFH.remove(abandonsFH.indexOf(Collections.min(abandonsFH))); //tolgo job dalla lista
                 if(abandonsFH.isEmpty()){
                     event[SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 3].x = 0;
                 }
