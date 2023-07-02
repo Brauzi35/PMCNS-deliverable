@@ -30,7 +30,7 @@ class MsqEvent{                     /* the next-event list    */
 
 class Msq {
     static double START   = 0.0;            /* initial (open the door)        */
-    static double STOP    = 612.0;        /* terminal (close the door) time */ //dalle 7 alle 24 in sec 61200.0;
+    static double STOP    = 61200.0;        /* terminal (close the door) time */ //dalle 7 alle 24 in sec 61200.0;
     static int    SERVERS = 4;              /* number of servers              */
     static int    SERVERS_REMOTI = 4;
     static int    SERVERS_FIELD_STD = 4;
@@ -136,6 +136,10 @@ class Msq {
 
                 System.out.println(i+ " - " +event[i].x + " time: " + event[i].t);
             }
+
+            if(field < 0){
+                break;
+            }
             //sarebbe meglio farlo dentro gli arrivi //todo
             if(!abandons.isEmpty()){
                 event[1].t = abandons.get(0);
@@ -201,7 +205,7 @@ class Msq {
 
 
             if (e == 0) {                                  /* process a callcenter arrival*/
-                System.out.println("entrato in arrivals");
+                System.out.println("entrato in arrivals callcenter");
                 number++;
                 event[0].t        = m.getArrival(r, t.current);
                 if (event[0].t > STOP)
@@ -255,9 +259,9 @@ class Msq {
                 dispatched++;
                 System.out.println("entrato in partenze dispatcher");
                 double rnd = Math.random(); //mi dice se il job va on field oppure va remoto
-                //per ora skip
                 double priority = Math.random();
-                if(rnd<0.8){ //in remoto
+                if(rnd<-1.0){ //in remoto era 0.8
+                    System.out.println("entrato ramo remoto");
                     if(priority < 0.0095){ //alta priorità
                         event[SERVERS + 6].x = 1;
                         event[SERVERS + 6].t = t.current;
@@ -274,6 +278,7 @@ class Msq {
                     remoto++;
                 }
                 else{//on field
+                    System.out.println("entrato ramo on field");
                     if(priority < 0.0095){ //alta priorità
                         event[SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3].x = 1;
                         event[SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3].t = t.current;
@@ -288,6 +293,7 @@ class Msq {
                         event[SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 1].t = t.current;
                     }
                     field++;
+                    System.out.println("ho incrementato field a: " + field);
                 }
 
 
@@ -536,6 +542,7 @@ class Msq {
             else if(e == SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 1){ //abbandono coda bassa priorità field
                 System.out.println("entrato in abbandono coda bassa priorità field");
                 field--;
+                System.out.println("ho decrementato field a: " + field);
                 abandonFL++;
                 abandonsFL.remove(0); //tolgo job dalla lista
                 if(abandonsFL.isEmpty()){
@@ -546,6 +553,7 @@ class Msq {
             else if(e == SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 2){ //abbandono coda media priorità field
                 System.out.println("entrato in abbandono coda media priorità field");
                 field--;
+                System.out.println("ho decrementato field a: " + field);
                 abandonFM++;
                 abandonsFM.remove(0); //tolgo job dalla lista
                 if(abandonsFM.isEmpty()){
@@ -556,6 +564,7 @@ class Msq {
             else if(e == SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 3){ //abbandono coda alta priorità field
                 System.out.println("entrato in abbandono coda alta priorità field");
                 field--;
+                System.out.println("ho decrementato field a: " + field);
                 abandonFH++;
                 abandonsFH.remove(0); //tolgo job dalla lista
                 if(abandonsFH.isEmpty()){
@@ -567,6 +576,7 @@ class Msq {
                 System.out.println("entrato in completamento server on field");
                 indexField++;
                 field--;
+                System.out.println("ho decrementato field a: " + field);
                 s = e;
                 //cleanup abbandoni
                 if(!abandonsFH.isEmpty() && abandonsFH.get(0) < t.current) { //minore o minore uguale?
@@ -747,7 +757,7 @@ class Msq {
         while (event[i].x == 0)       /* find the index of the first 'active' */
             i++;                        /* element in the event list            */
         e = i;
-        while (i < SERVERS+3+3+3+SERVERS_REMOTI) {      //messo +1, ora +3 /* now, check the others to find which  */
+        while (i < SERVERS+3+3+3+SERVERS_REMOTI + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 2) {      //messo +1, ora +3 /* now, check the others to find which  */
             i++;                        /* event type is most imminent          */
             if ((event[i].x == 1) && (event[i].t < event[e].t))
                 e = i;
