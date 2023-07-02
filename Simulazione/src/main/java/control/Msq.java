@@ -32,7 +32,7 @@ class Msq {
     static double START   = 0.0;            /* initial (open the door)        */
     static double STOP    = 61200.0;        /* terminal (close the door) time */ //dalle 7 alle 24 in sec
     static int    SERVERS = 4;              /* number of servers              */
-    static int    SERVERS_REMOTI = 6;
+    static int    SERVERS_REMOTI = 4;
 
     static double sarrival = START;
 
@@ -74,9 +74,9 @@ class Msq {
             fasce.add(fo); //popolo array fasce orarie dinamicamente
         }
 
-        MsqEvent [] event = new MsqEvent [SERVERS + 2 + 2 + 14]; //il secondo + 2 indica gli eventi di arrivo e completamento per il dispatcher
-        MsqSum [] sum = new MsqSum [SERVERS + 2 + 2 +14]; //14 perchè 3 arrivi + 3 arrivi + 3 abb + 3 abb+ 1 compl + 1 comp
-        for (s = 0; s < SERVERS + 2 + 2 + 14; s++) { //prima era +1, ne ho messo un altro per gli abbandoni
+        MsqEvent [] event = new MsqEvent [SERVERS + 2 + 2 + 3 + 3 + SERVERS_REMOTI]; //il secondo + 2 indica gli eventi di arrivo e completamento per il dispatcher
+        MsqSum [] sum = new MsqSum [SERVERS + 2 + 2 +3 + 3 + SERVERS_REMOTI]; //14 perchè 3 arrivi + 3 arrivi + 3 abb + 3 abb+ 1 compl + 1 comp
+        for (s = 0; s < SERVERS + 2 + 2 +3 + 3 + SERVERS_REMOTI; s++) { //prima era +1, ne ho messo un altro per gli abbandoni
             event[s] = new MsqEvent();
             sum [s]  = new MsqSum();
         }
@@ -87,7 +87,7 @@ class Msq {
         t.current    = START;
         event[0].t   = m.getArrival(r, t.current);
         event[0].x   = 1;
-        for (s = 1; s <= SERVERS + 2 + 14; s++) { //messo il + 2 perchè ho aggiunto il dispatcher e +14 per i due centri dei guasti?
+        for (s = 1; s < SERVERS + 2 + 2 +3 + 3 + SERVERS_REMOTI; s++) { //messo il + 2 perchè ho aggiunto il dispatcher e +14 per i due centri dei guasti?
             event[s].t     = START;          /* this value is arbitrary because */
             event[s].x     = 0;              /* all servers are initially idle  */
             sum[s].service = 0.0;
@@ -99,7 +99,8 @@ class Msq {
         while ((event[0].x != 0) || (number + numberDispatcher != 0)) {
 
             //System.out.println("number is "+number);
-            System.out.println("stato server con number a: " + number + " e dispatcher number a: " + numberDispatcher);
+            System.out.println("stato server con number a: " + number + " e dispatcher number a: " + numberDispatcher +
+                    " remoto a: " + remoto);
             System.out.println("abbandoni: "+abandons);
             System.out.println("abbandoni alta: "+abandonsRH);
             System.out.println("abbandoni media: "+abandonsRM);
@@ -109,17 +110,44 @@ class Msq {
 
                 System.out.println(i+ " - " +event[i].x + " time: " + event[i].t);
             }
+            for(int i = 8; i<11; i++) {
+
+                System.out.println("arrivi alle code di priorità "+ " - " +event[i].x + " time: " + event[i].t);
+            }
 
             for(int i = SERVERS+7; i<SERVERS+7+SERVERS_REMOTI; i++) {
 
                 System.out.println(i+ " - " +event[i].x + " time: " + event[i].t);
             }
+            //sarebbe meglio farlo dentro gli arrivi //todo
             if(!abandons.isEmpty()){
                 event[1].t = abandons.get(0);
                 event[1].x = 1;
             }
             else{
                 event[1].x = 0;
+            }
+
+            if(!abandonsRH.isEmpty()){
+                event[SERVERS + 7 + SERVERS_REMOTI + 0].t = abandonsRH.get(0);
+                event[SERVERS + 7 + SERVERS_REMOTI + 0].x = 1;
+            }
+            else{
+                event[SERVERS + 7 + SERVERS_REMOTI + 0].x = 0;
+            }
+            if(!abandonsRM.isEmpty()){
+                event[SERVERS + 7 + SERVERS_REMOTI + 1].t = abandonsRM.get(0);
+                event[SERVERS + 7 + SERVERS_REMOTI + 1].x = 1;
+            }
+            else{
+                event[SERVERS + 7 + SERVERS_REMOTI + 1].x = 0;
+            }
+            if(!abandonsRL.isEmpty()){
+                event[SERVERS + 7 + SERVERS_REMOTI + 2].t = abandonsRL.get(0);
+                event[SERVERS + 7 + SERVERS_REMOTI + 2].x = 1;
+            }
+            else{
+                event[SERVERS + 7 + SERVERS_REMOTI + 2].x = 0;
             }
 
 
@@ -133,7 +161,7 @@ class Msq {
 
 
             if (e == 0) {                                  /* process a callcenter arrival*/
-                System.out.println("entrato in arivals");
+                System.out.println("entrato in arrivals");
                 number++;
                 event[0].t        = m.getArrival(r, t.current);
                 if (event[0].t > STOP)
@@ -168,6 +196,7 @@ class Msq {
 
             else if(e == SERVERS + 2){ //arrivo dispatcher
                 //numberDispatcher++; //incremento contatore
+                System.out.println("entrato in arrivo dispatcher");
                 event[SERVERS + 2].x = 0; //non può esserci un altro arrivo al dispatcher senza che ci
                 //sia un' altra partenza dal centralino
                 //se number dispatcher è >= 1 dopo l'incremento, vuol dire che ho il server idle
@@ -184,13 +213,14 @@ class Msq {
             else if(e == SERVERS + 3){//departure dispatcher
                 numberDispatcher--;
                 dispatched++;
-
+                System.out.println("entrato in partenze dispatcher");
                 double rnd = Math.random(); //mi dice se il job va on field oppure va remoto
                 //per ora skip
                 double priority = Math.random();
                 if(priority < 0.0095){ //alta priorità
                     event[SERVERS + 6].x = 1;
                     event[SERVERS + 6].t = t.current;
+
                 }
                 else if(priority < 0.1075){ //media priorità
                     event[SERVERS + 5].x = 1;
@@ -200,6 +230,7 @@ class Msq {
                     event[SERVERS + 4].x = 1;
                     event[SERVERS + 4].t = t.current;
                 }
+                remoto++;
 
                 if (numberDispatcher >= 1) { //se ho coda
                     //riprocesso un servizio spawnando un nuovo evento di completamento
@@ -218,7 +249,7 @@ class Msq {
 
             else if(e == SERVERS + 4){ //arrivo coda priorità bassa - remoto
                 //remoto++;
-
+                System.out.println("entrato in arrivo coda bassa priorità");
                 event[SERVERS + 4].x = 0; //non può esserci un altro arrivo in questa coda senza che ci
                 //sia un' altra partenza dal dispatcher
 
@@ -226,14 +257,17 @@ class Msq {
                     //processiamo i servizi
                     service = m.getService(r); //cambiare!
                     s = m.findOneRemoto(event);
+                    System.out.println("s is: " + s);
                     sum[s].service +=service;
                     sum[s].served++;
                     event[s].t = t.current + service;
                     event[s].x = 1; //elegibile come next event
 
+
                 }
-                if(remoto > SERVERS_REMOTI){
+                else{
                     //genero abbandono se un job sta in coda
+                    System.out.println("genero abbandono bassa");
                     double at = m.getAbandon(r) + t.current;
                     abandonsRL.add(at);
                 }
@@ -242,7 +276,7 @@ class Msq {
 
             else if(e == SERVERS + 5){ //arrivo coda priorità media - remoto
                 //remoto++;
-
+                System.out.println("entrato in arrivo coda media priorità");
                 event[SERVERS + 5].x = 0; //non può esserci un altro arrivo in questa coda senza che ci
                 //sia un' altra partenza dal dispatcher
 
@@ -250,14 +284,16 @@ class Msq {
                     //processiamo i servizi
                     service = m.getService(r); //cambiare!
                     s = m.findOneRemoto(event);
+                    System.out.println("s is: " + s);
                     sum[s].service +=service;
                     sum[s].served++;
                     event[s].t = t.current + service;
                     event[s].x = 1; //elegibile come next event
 
                 }
-                if(remoto > SERVERS_REMOTI){
+                else{
                     //genero abbandono se un job sta in coda
+                    System.out.println("genero abbandono media");
                     double at = m.getAbandon(r) + t.current;
                     abandonsRM.add(at);
                 }
@@ -266,6 +302,7 @@ class Msq {
 
             else if(e == SERVERS + 6){ //arrivo coda priorità alta - remoto
                 //remoto++;
+                System.out.println("entrato in arrivo coda alta priorità");
                 event[SERVERS + 6].x = 0; //non può esserci un altro arrivo in questa coda senza che ci
                 //sia un' altra partenza dal dispatcher
 
@@ -280,40 +317,45 @@ class Msq {
 
                 }
                 if(remoto > SERVERS_REMOTI){
+                    System.out.println("genero abbandono alta");
                     double at = m.getAbandon(r) + t.current;
                     abandonsRH.add(at);
                 }
 
             }
 
-            else if(e == SERVERS + 7 + SERVERS_REMOTI + 1){ //abbandono coda alta priorità remoto
+            else if(e == SERVERS + 7 + SERVERS_REMOTI){ //abbandono coda alta priorità remoto
+                System.out.println("entrato in abbandono coda alta priorità");
                 remoto--;
                 abandonRH++;
                 abandonsRH.remove(0); //tolgo job dalla lista
                 if(abandonsRH.isEmpty()){
-                    event[SERVERS + 7 + SERVERS_REMOTI + 1].x = 0;
+                    event[SERVERS + 7 + SERVERS_REMOTI].x = 0;
                 }
             }
 
-            else if(e == SERVERS + 7 + SERVERS_REMOTI + 2){ //abbandono coda media priorità remoto
+            else if(e == SERVERS + 7 + SERVERS_REMOTI + 1){ //abbandono coda media priorità remoto
+                System.out.println("entrato in abbandono coda media priorità");
                 remoto--;
                 abandonRM++;
                 abandonsRM.remove(0); //tolgo job dalla lista
                 if(abandonsRM.isEmpty()){
-                    event[SERVERS + 7 + SERVERS_REMOTI + 2].x = 0;
+                    event[SERVERS + 7 + SERVERS_REMOTI + 1].x = 0;
                 }
             }
 
-            else if(e == SERVERS + 7 + SERVERS_REMOTI + 3){ //abbandono coda bassa priorità remoto
+            else if(e == SERVERS + 7 + SERVERS_REMOTI + 2){ //abbandono coda bassa priorità remoto
+                System.out.println("entrato in abbandono coda bassa priorità");
                 remoto--;
                 abandonRL++;
                 abandonsRL.remove(0); //tolgo job dalla lista
                 if(abandonsRL.isEmpty()){
-                    event[SERVERS + 7 + SERVERS_REMOTI + 3].x = 0;
+                    event[SERVERS + 7 + SERVERS_REMOTI + 2].x = 0;
                 }
             }
 
-            else if(e >= SERVERS + 7 && e <= SERVERS + 7 + SERVERS_REMOTI){//completamento server remoto
+            else if(e >= SERVERS + 7 && e < SERVERS + 7 + SERVERS_REMOTI){//completamento server remoto
+                System.out.println("entrato in completamento server remoto");
                 indexRemoto++;
                 remoto--;
                 s = e;
@@ -394,7 +436,7 @@ class Msq {
         for (s = 2; s <= SERVERS+1; s++) {      /* adjust area to calculate */
             area -= sum[s].service;              /* averages for the queue   */
         }
-        for (s = SERVERS + 7; s <= SERVERS+7+SERVERS_REMOTI; s++) {
+        for (s = SERVERS + 7; s < SERVERS+7+SERVERS_REMOTI; s++) {
             area -= sum[s].service;              /* averages for the queue   */
         }
 
@@ -523,7 +565,7 @@ class Msq {
 
         }
         s = i;
-        while (i < SERVERS + 7 + SERVERS_REMOTI +1) {     //aggiunto +1    /* now, check the others to find which   */
+        while (i < SERVERS + 7 + SERVERS_REMOTI) {         /* now, check the others to find which   */
             i++;                        /* has been idle longest                 */
             if ((event[i].x == 0) && (event[i].t < event[s].t))
                 s = i;
