@@ -174,11 +174,11 @@ class Msq {
             }
 
             if(!abandonsFH.isEmpty()){
-                event[SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 1].t = abandonsFH.get(abandonsFH.indexOf(Collections.min(abandonsFH)));
-                event[SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 1].x = 1;
+                event[SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 3].t = abandonsFH.get(abandonsFH.indexOf(Collections.min(abandonsFH)));
+                event[SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 3].x = 1;
             }
             else{
-                event[SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 1].x = 0;
+                event[SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 3].x = 0;
             }
             if(!abandonsFM.isEmpty()){
                 event[SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 2].t = abandonsFM.get(abandonsFM.indexOf(Collections.min(abandonsFM)));
@@ -188,11 +188,11 @@ class Msq {
                 event[SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 2].x = 0;
             }
             if(!abandonsFL.isEmpty()){
-                event[SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 3].t = abandonsFL.get(abandonsFL.indexOf(Collections.min(abandonsFL)));
-                event[SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 3].x = 1;
+                event[SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 1].t = abandonsFL.get(abandonsFL.indexOf(Collections.min(abandonsFL)));
+                event[SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 1].x = 1;
             }
             else{
-                event[SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 3].x = 0;
+                event[SERVERS + 4 + 2 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 1].x = 0;
             }
 
 
