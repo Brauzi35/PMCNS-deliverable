@@ -30,7 +30,7 @@ class MsqEvent{                     /* the next-event list    */
 
 class Msq {
     static double START   = 0.0;            /* initial (open the door)        */
-    static double STOP    = 61200.0;        /* terminal (close the door) time */ //dalle 7 alle 24 in sec
+    static double STOP    = 61200.0;        /* terminal (close the door) time */ //dalle 7 alle 24 in sec 61200.0;
     static int    SERVERS = 4;              /* number of servers              */
     static int    SERVERS_REMOTI = 4;
 
@@ -96,7 +96,7 @@ class Msq {
 
 
 //cambiata condizione while
-        while ((event[0].x != 0) || (number + numberDispatcher != 0)) {
+        while ((event[0].x != 0) || (number + numberDispatcher + remoto != 0)) {
 
             //System.out.println("number is "+number);
             System.out.println("stato server con number a: " + number + " e dispatcher number a: " + numberDispatcher +
@@ -436,9 +436,13 @@ class Msq {
         for (s = 2; s <= SERVERS+1; s++) {      /* adjust area to calculate */
             area -= sum[s].service;              /* averages for the queue   */
         }
+        /*
         for (s = SERVERS + 7; s < SERVERS+7+SERVERS_REMOTI; s++) {
-            area -= sum[s].service;              /* averages for the queue   */
+            area -= sum[s].service;
         }
+
+         */
+
 
         System.out.println("  avg delay .......... =   " + f.format(area / index));
         System.out.println("  avg # in queue ..... =   " + f.format(area / t.current));
@@ -565,7 +569,7 @@ class Msq {
 
         }
         s = i;
-        while (i < SERVERS + 7 + SERVERS_REMOTI) {         /* now, check the others to find which   */
+        while (i < SERVERS + 7 + SERVERS_REMOTI-1) {         /* now, check the others to find which   */
             i++;                        /* has been idle longest                 */
             if ((event[i].x == 0) && (event[i].t < event[s].t))
                 s = i;
