@@ -133,7 +133,7 @@ class Msq {
                 System.out.println(i+ " - " +event[i].x + " time: " + event[i].t);
             }
 
-            for(int i = 2 + SERVERS + 2 +3 +3 +SERVERS_REMOTI + 3; i<2 + SERVERS + 2 +3 +3 +SERVERS_REMOTI + 3 + SERVERS_FIELD_STD + SERVERS_FIELD_SPECIAL +1; i++) {
+            for(int i = 2 + SERVERS + 2 +3 +3 +SERVERS_REMOTI + 3; i<2 + SERVERS + 2 +3 +3 +SERVERS_REMOTI + 3 + SERVERS_FIELD_STD + SERVERS_FIELD_SPECIAL ; i++) {
 
                 System.out.println(i+ " - " +event[i].x + " time: " + event[i].t);
             }
@@ -263,7 +263,7 @@ class Msq {
                 r.selectStream(10);
                 double rnd = r.random(); //mi dice se il job va on field oppure va remoto
                 double priority = r.random();
-                if(rnd<-1.0){ //in remoto era 0.8
+                if(rnd<0.8){ //in remoto era 0.8
                     System.out.println("entrato ramo remoto");
                     if(priority < 0.0095){ //alta priorità
                         event[SERVERS + 6].x = 1;
@@ -591,19 +591,22 @@ class Msq {
                 if(!abandonsFL.isEmpty() && abandonsFL.get(0) < t.current) { //minore o minore uguale?
                     abandonsFL.remove(0);
                 }
+                int size = abandonsFH.size() + abandonsFL.size() + abandonsFM.size();
 
                 //servizio se c'è coda - comportamento server speciali
-                if(s>= 2 + SERVERS + 2 + 3 + 3 + SERVERS_REMOTI + 3 && s<  2 + SERVERS + 2 + 3 + 3 + SERVERS_REMOTI + 3 + SERVERS_FIELD_SPECIAL ){
-                    if(!abandonsFH.isEmpty()){
+                if(s>= 2 + SERVERS + 2 + 3 + 3 + SERVERS_REMOTI + 3 && s<  2 + SERVERS + 2 + 3 + 3 + SERVERS_REMOTI + 3 + SERVERS_FIELD_SPECIAL && !abandonsFH.isEmpty()){
+                    //if(!abandonsFH.isEmpty()){
+
                         abandonsFH.remove(0); //prendo un job dalla coda ad alta priorità
                         service         = m.getService(r);
                         sum[s].service += service;
                         sum[s].served++;
                         event[s].t      = t.current + service;
-                    }
+                   // }
                 }
-                else if(s>= 2 + SERVERS + 2 + 3 + 3 + SERVERS_REMOTI + 3 + SERVERS_FIELD_SPECIAL && s <  2 + SERVERS + 2 + 3 + 3 + SERVERS_REMOTI + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 1){
 
+
+                else if(s>= 2 + SERVERS + 2 + 3 + 3 + SERVERS_REMOTI + 3 + SERVERS_FIELD_SPECIAL && s <  2 + SERVERS + 2 + 3 + 3 + SERVERS_REMOTI + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 1 && size!=0){
                     service         = m.getService(r);
                     sum[s].service += service;
                     sum[s].served++;
@@ -680,6 +683,12 @@ class Msq {
         System.out.println("  avg delay .......... =   " + f.format(area / index));
         System.out.println("  avg # in queue ..... =   " + f.format(area / t.current));
         System.out.println("  abandons ........... =   " + abandon);
+        System.out.println("  abandons in FH........... =   " + abandonFH);
+        System.out.println("  abandons in FM........... =   " + abandonFM);
+        System.out.println("  abandons in FL........... =   " + abandonFL);
+        System.out.println("  abandons in RH........... =   " + abandonRH);
+        System.out.println("  abandons in RM........... =   " + abandonRM);
+        System.out.println("  abandons in RL........... =   " + abandonRL);
         System.out.println("  il dispathcer ha servito ticket =   " + dispatched + " per un tempo" +
                 " totale di: " + sum[SERVERS + 3].service);
         System.out.println("\nthe server statistics are:\n");
@@ -689,11 +698,25 @@ class Msq {
             System.out.print("       " + s + "          " + g.format(sum[s].service / t.current) + "            ");
             System.out.println(f.format(sum[s].service / sum[s].served) + "         " + g.format(sum[s].served / (double)index));
         }
+        int disp = 2+SERVERS +1;
+        System.out.print("       " + disp + "          " + g.format(sum[2+SERVERS +1].service / t.current) + "            ");
+        System.out.println(f.format(sum[2+SERVERS +1].service / sum[2+SERVERS +1].served) + "         " + g.format(sum[2+SERVERS +1].served / (double)dispatched));
 
-        for (s = SERVERS + 7; s <= SERVERS+7+SERVERS_REMOTI; s++) {
+
+        for (s = SERVERS + 7; s < SERVERS+7+SERVERS_REMOTI; s++) {
             //System.out.println(s +" "+sum[s].service + " " +t.current);
             System.out.print("       " + s + "          " + g.format(sum[s].service / t.current) + "            ");
             System.out.println(f.format(sum[s].service / sum[s].served) + "         " + g.format(sum[s].served / (double)indexRemoto));
+        }
+
+        for (s =2 + SERVERS + 2 + 3 + SERVERS_REMOTI + 3 + 3; s< 2 + SERVERS + 2 + 3 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL; s++){
+            System.out.print("       " + s + "          " + g.format(sum[s].service / t.current) + "            ");
+            System.out.println(f.format(sum[s].service / sum[s].served) + "         " + g.format(sum[s].served / (double)indexField));
+        }
+
+        for (s =2 + SERVERS + 2 + 3 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL; s< 2 + SERVERS + 2 + 3 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD; s++){
+            System.out.print("       " + s + "          " + g.format(sum[s].service / t.current) + "            ");
+            System.out.println(f.format(sum[s].service / sum[s].served) + "         " + g.format(sum[s].served / (double)indexField));
         }
 
 
