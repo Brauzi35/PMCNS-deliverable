@@ -13,7 +13,7 @@ public class FasciaOraria {
         this.chiamateGiornaliereTotali = chiamateGiornaliereTotali;
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
-        this.mediaPoisson = percentualeChiamate * chiamateGiornaliereTotali;
+        this.mediaPoisson = 1/(percentualeChiamate * chiamateGiornaliereTotali/1800);
     }
 
     public double getMediaPoisson() {

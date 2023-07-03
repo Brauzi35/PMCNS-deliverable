@@ -31,7 +31,7 @@ class MsqEvent{                     /* the next-event list    */
 
 class Msq {
     static double START   = 0.0;            /* initial (open the door)        */
-    static double STOP    = 61200.0;        /* terminal (close the door) time */ //dalle 7 alle 24 in sec 61200.0;
+    static double STOP    = 55800.0;        /* terminal (close the door) time */ //dalle 7 alle 24 in sec 61200.0; 55800 tolte 3 fasce
     static int    SERVERS = 4;              /* number of servers              */
     static int    SERVERS_REMOTI = 4;
     static int    SERVERS_FIELD_STD = 4;
@@ -39,8 +39,11 @@ class Msq {
 
     static double sarrival = START;
 
-    static double [] percentuali = {0.00,    0.10,    2.20,    3.30,    4.20,    4.70,    4.90,    4.90,    4.80,    4.60,    4.20,    3.80,    3.50,    3.50,    3.70,    3.60,    3.50,    3.60,    3.70,    3.90,    4.00,    4.10,    4.10,    3.90,    3.40,    2.70,    1.80,    1.70,    1.50,    1.10,    0.60,    0.30,    0.00,    0.00};
+    //static double [] percentuali = {0.00,    0.10,    2.20,    3.30,    4.20,    4.70,    4.90,    4.90,    4.80,    4.60,    4.20,    3.80,    3.50,    3.50,    3.70,    3.60,    3.50,    3.60,    3.70,    3.90,    4.00,    4.10,    4.10,    3.90,    3.40,    2.70,    1.80,    1.70,    1.50,    1.10,    0.60,    0.30,    0.00,    0.00};
     static List<FasciaOraria> fasce = new ArrayList<>();
+
+    static double [] percentuali = {0.001,    0.02,    0.03,    0.04,    0.0470,    0.049,    0.049,    0.048,    0.046,    0.042,    0.038,    0.0350,    0.0350,    0.037,    0.036,    0.035,    0.036,    0.037,    0.039,    0.04,    0.041,    0.041,    0.039,    0.034,    0.027,    0.018,    0.017,    0.015,    0.011,    0.006,    0.003};
+
 
 
 
@@ -79,7 +82,7 @@ class Msq {
         List<Double> abandonsFL = new ArrayList<Double>(); //lista abbandoni on field low priority
 
 
-        for(int f = 0; f<34; f++){ //sono 34 fasce orarie da mezz'ora
+        for(int f = 0; f<31; f++){ //sono 34 fasce orarie da mezz'ora
             FasciaOraria fo = new FasciaOraria(percentuali[f], 10958, 0 + 1800*f, 1800*(f+1)-1);
             fasce.add(fo); //popolo array fasce orarie dinamicamente
         }
@@ -111,7 +114,7 @@ class Msq {
             //System.out.println("number is "+number);
             System.out.println("stato server con number a: " + number + " e dispatcher number a: " + numberDispatcher +
                     " remoto a: " + remoto + " on field a: " + field);
-            System.out.println("abbandoni: "+abandons);
+            //System.out.println("abbandoni: "+abandons);
             System.out.println("abbandoni alta remote: "+abandonsRH);
             System.out.println("abbandoni media remote: "+abandonsRM);
             System.out.println("abbandoni bassa remote: "+abandonsRL);
@@ -428,6 +431,7 @@ class Msq {
                 indexRemoto++;
                 remoto--;
                 s = e;
+
                 //cleanup abbandoni
                 if(!abandonsRH.isEmpty() && abandonsRH.get(0) < t.current) { //minore o minore uguale?
                     abandonsRH.remove(0);
@@ -754,9 +758,11 @@ class Msq {
         r.selectStream(0);
         int index = FasciaOrariaController.fasciaOrariaSwitch(fasce, currentTime);
 
+        Rvms rvms = new Rvms();
 
-        //sarrival += exponential(fasce.get(index).getMediaPoisson(), r); //deve diventare poissoniana
-        sarrival += exponential(2.0, r);
+        sarrival += rvms.idfPoisson(fasce.get(index).getMediaPoisson(), r.random()); //deve diventare poissoniana
+        //sarrival += exponential(2.0, r);
+        //sarrival += rvms.idfPoisson(3.26, r.random());
         return (sarrival);
     }
 
