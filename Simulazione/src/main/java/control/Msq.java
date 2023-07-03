@@ -32,10 +32,19 @@ class MsqEvent{                     /* the next-event list    */
 class Msq {
     static double START   = 0.0;            /* initial (open the door)        */
     static double STOP    = 55800.0;        /* terminal (close the door) time */ //dalle 7 alle 24 in sec 61200.0; 55800 tolte 3 fasce
-    static int    SERVERS = 4;              /* number of servers              */
-    static int    SERVERS_REMOTI = 4;
-    static int    SERVERS_FIELD_STD = 4;
-    static int    SERVERS_FIELD_SPECIAL = 1;
+    static int    SERVERS = 70;              /* number of servers              */
+    static int    SERVERS_REMOTI = 70;
+    static int    SERVERS_FIELD_STD = 60;
+    static int    SERVERS_FIELD_SPECIAL = 17;
+
+    static double PATIENCE_LOW_REMOTO = 300;
+    static double PATIENCE_MEDIUM_REMOTO = 240;
+    static double PATIENCE_HIGH_REMOTO = 180;
+    static double PATIENCE_LOW_FIELD = 172800;
+    static double PATIENCE_MEDIUM_FIELD = 86400;
+    static double PATIENCE_HIGH_FIELD = 43200;
+    static double PATIENCE_CENTRALINO = 480;
+
 
     static double sarrival = START;
 
@@ -216,7 +225,7 @@ class Msq {
                 if (event[0].t > STOP)
                     event[0].x      = 0; //close the door
                 if (number <= SERVERS) {
-                    service         = m.getService(r);
+                    service         = m.getServiceCentralino(r);
                     s               = m.findOne(event); //id server
                     System.out.println("s is " + s);
                     sum[s].service += service;
@@ -227,7 +236,7 @@ class Msq {
                 if (number > SERVERS){
                     //genero abbandono se un job sta in coda
                     System.out.println("arrivo di un job messo in coda e numero di job nel nodo = " + number);
-                    double at = m.getAbandon(r) + t.current;
+                    double at = m.getAbandon(PATIENCE_CENTRALINO, r) + t.current;
                     abandons.add(at);
                 }
             }
@@ -327,7 +336,7 @@ class Msq {
 
                 if(remoto <= SERVERS_REMOTI && abandonsRH.isEmpty() && abandonsRM.isEmpty()){
                     //processiamo i servizi
-                    service = m.getService(r); //cambiare!
+                    service = m.getServiceRemote(r); //cambiare!
                     s = m.findOneRemoto(event);
                     System.out.println("s is: " + s);
                     sum[s].service +=service;
@@ -340,7 +349,7 @@ class Msq {
                 else{
                     //genero abbandono se un job sta in coda
                     System.out.println("genero abbandono bassa");
-                    double at = m.getAbandon(r) + t.current;
+                    double at = m.getAbandon(PATIENCE_LOW_REMOTO, r) + t.current;
                     abandonsRL.add(at);
                 }
 
@@ -354,7 +363,7 @@ class Msq {
 
                 if(remoto <= SERVERS_REMOTI && abandonsRH.isEmpty()){
                     //processiamo i servizi
-                    service = m.getService(r); //cambiare!
+                    service = m.getServiceRemote(r); //cambiare!
                     s = m.findOneRemoto(event);
                     System.out.println("s is: " + s);
                     sum[s].service +=service;
@@ -366,7 +375,7 @@ class Msq {
                 else{
                     //genero abbandono se un job sta in coda
                     System.out.println("genero abbandono media");
-                    double at = m.getAbandon(r) + t.current;
+                    double at = m.getAbandon(PATIENCE_MEDIUM_REMOTO, r) + t.current;
                     abandonsRM.add(at);
                 }
 
@@ -380,7 +389,7 @@ class Msq {
 
                 if(remoto <= SERVERS_REMOTI){
                     //processiamo i servizi
-                    service = m.getService(r); //cambiare!
+                    service = m.getServiceRemote(r); //cambiare!
                     s = m.findOneRemoto(event);
                     sum[s].service +=service;
                     sum[s].served++;
@@ -390,7 +399,7 @@ class Msq {
                 }
                 if(remoto > SERVERS_REMOTI){
                     System.out.println("genero abbandono alta");
-                    double at = m.getAbandon(r) + t.current;
+                    double at = m.getAbandon(PATIENCE_HIGH_REMOTO, r) + t.current;
                     abandonsRH.add(at);
                 }
 
@@ -445,7 +454,7 @@ class Msq {
 
                 //servizio se c'è coda
                 if(remoto >= SERVERS_REMOTI){
-                    service         = m.getService(r);
+                    service         = m.getServiceRemote(r);
                     sum[s].service += service;
                     sum[s].served++;
                     event[s].t      = t.current + service;
@@ -475,7 +484,7 @@ class Msq {
 
                 if(field <= SERVERS_FIELD_STD && abandonsFH.isEmpty() && abandonsFM.isEmpty()){ //la coda di priorità bassa vede solo i server standard
                     //processiamo i servizi
-                    service = m.getService(r); //cambiare!
+                    service = m.getServiceField(r); //cambiare!
                     s = m.findOneFieldStd(event);
                     System.out.println("s is: " + s);
                     sum[s].service +=service;
@@ -488,7 +497,7 @@ class Msq {
                 else{
                     //genero abbandono se un job sta in coda
                     System.out.println("genero abbandono bassa");
-                    double at = m.getAbandon(r) + t.current;
+                    double at = m.getAbandon(PATIENCE_LOW_FIELD, r) + t.current;
                     abandonsFL.add(at);
                 }
 
@@ -501,7 +510,7 @@ class Msq {
 
                 if(field <= SERVERS_FIELD_STD && abandonsFH.isEmpty()){ //la coda di priorità media vede solo i server standard
                     //processiamo i servizi
-                    service = m.getService(r); //cambiare!
+                    service = m.getServiceField(r); //cambiare!
                     s = m.findOneFieldStd(event);
                     System.out.println("s is: " + s);
                     sum[s].service +=service;
@@ -514,7 +523,7 @@ class Msq {
                 else{
                     //genero abbandono se un job sta in coda
                     System.out.println("genero abbandono bassa");
-                    double at = m.getAbandon(r) + t.current;
+                    double at = m.getAbandon(PATIENCE_MEDIUM_FIELD, r) + t.current;
                     abandonsFM.add(at);
                 }
 
@@ -527,7 +536,7 @@ class Msq {
 
                 if(field <= SERVERS_FIELD_STD + SERVERS_FIELD_SPECIAL){ //la coda di priorità alta vede i server standard + quelli dedicati
                     //processiamo i servizi
-                    service = m.getService(r); //cambiare!
+                    service = m.getServiceField(r); //cambiare!
                     s = m.findOneFieldSpecial(event);
                     System.out.println("s is: " + s);
                     sum[s].service +=service;
@@ -540,7 +549,7 @@ class Msq {
                 else{
                     //genero abbandono se un job sta in coda
                     System.out.println("genero abbandono bassa");
-                    double at = m.getAbandon(r) + t.current;
+                    double at = m.getAbandon(PATIENCE_HIGH_FIELD, r) + t.current;
                     abandonsFH.add(at);
                 }
 
@@ -602,7 +611,7 @@ class Msq {
                     //if(!abandonsFH.isEmpty()){
 
                         abandonsFH.remove(0); //prendo un job dalla coda ad alta priorità
-                        service         = m.getService(r);
+                        service         = m.getServiceField(r);
                         sum[s].service += service;
                         sum[s].served++;
                         event[s].t      = t.current + service;
@@ -611,7 +620,7 @@ class Msq {
 
 
                 else if(s>= 2 + SERVERS + 2 + 3 + 3 + SERVERS_REMOTI + 3 + SERVERS_FIELD_SPECIAL && s <  2 + SERVERS + 2 + 3 + 3 + SERVERS_REMOTI + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD + 1 && size!=0){
-                    service         = m.getService(r);
+                    service         = m.getServiceField(r);
                     sum[s].service += service;
                     sum[s].served++;
                     event[s].t      = t.current + service;
@@ -649,7 +658,7 @@ class Msq {
 
 
                 if (number >= SERVERS) { //se ho coda
-                    service         = m.getService(r);
+                    service         = m.getServiceCentralino(r);
                     sum[s].service += service;
                     sum[s].served++;
                     event[s].t      = t.current + service;
@@ -745,9 +754,11 @@ class Msq {
         return (a + (b - a) * r.random());
     }
 
-    double getAbandon(Rngs r){
+    double getAbandon(double patience, Rngs r){
         r.selectStream(1);
-        return (uniform(2.0, 10.5, r)); //deve diventare erlang a
+        //double theta = 1/patience;   // tasso di interabbandono
+        System.out.println("Il tasso di abbandono: " + patience);
+        return (-patience * Math.log(1.0 - r.random()));
     }
 
     double getArrival(Rngs r, double currentTime) {
@@ -767,7 +778,7 @@ class Msq {
     }
 
 
-    double getService(Rngs r) {
+    double getServiceCentralino(Rngs r) {
         /* ------------------------------
          * generate the next service time, with rate 1/6
          * ------------------------------
@@ -777,6 +788,21 @@ class Msq {
         //return (uniform(2.0, 10.0, r));
         return rvms.idfLogNormal(5.97, 0.02761, r.random());
     }
+
+    double getServiceField(Rngs r){
+        // Esponenziale
+        r.selectStream(20);
+        double m = 10800;  // 3h = 10800s
+        return (-m * Math.log(1.0 - r.random()));
+    }
+
+    double getServiceRemote(Rngs r){
+        Rvms rvms = new Rvms();
+        r.selectStream(1);
+        //return (uniform(2.0, 10.0, r));
+        return rvms.idfLogNormal(6.263, 0.025, r.random());
+    }
+
 
     int nextEvent(MsqEvent [] event) {
         /* ---------------------------------------
