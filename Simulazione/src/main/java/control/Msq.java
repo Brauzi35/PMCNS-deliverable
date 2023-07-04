@@ -58,6 +58,10 @@ class Msq {
         long abandonFH = 0;
         long abandonFM = 0;
         long abandonFL = 0;
+        long contrattoRescissoField = 0;
+        long contrattoRescissoRemoto = 0;
+        long feedbackField = 0;
+        long feedbackRemoto = 0;
 
         Msq m = new Msq();
         Rngs r = new Rngs();
@@ -422,6 +426,38 @@ class Msq {
                 remoto--;
                 s = e;
 
+
+                //feedback remote
+                r.selectStream(18);
+                double probability = r.random();
+                if(probability<GOBACK_PROBABILITY){ //la riparazione non ha sortito l'effetto desiderato
+                    double feedback = r.random();
+                    if(feedback < LEAVE_PROBABILTY){ //l'utente in questo caso decide di lasciare l'operatore rescindendo il contratto
+                        contrattoRescissoRemoto++;
+                    }
+                    else if(feedback >= LEAVE_PROBABILTY && event[0].x == 1){
+                        feedbackRemoto++;
+                        //il cliente richiama il centralino e ricomincia la procedura
+                        //ciò è possibile solo se non è ancora passato il close the door
+                        number++;
+                        if (number <= SERVERS) {
+                            service         = m.getServiceCentralino(r);
+                            s               = m.findOne(event); //id server
+                            System.out.println("s is " + s);
+                            sum[s].service += service;
+                            sum[s].served++;
+                            event[s].t      = t.current + service; //tempo di completamento
+                            event[s].x      = 1; //eleggibile per il next event
+                        }
+                        if (number > SERVERS){
+                            //genero abbandono se un job sta in coda
+                            System.out.println("arrivo di un job messo in coda e numero di job nel nodo = " + number);
+                            double at = m.getAbandon(PATIENCE_CENTRALINO, r) + t.current;
+                            abandons.add(at);
+                        }
+                    }
+                }
+
                 //cleanup abbandoni
                 if(!abandonsRH.isEmpty() && abandonsRH.get(0) < t.current) { //minore o minore uguale?
                     abandonsRH.remove(0);
@@ -575,6 +611,40 @@ class Msq {
                 field--;
                 System.out.println("ho decrementato field a: " + field);
                 s = e;
+
+
+                //feedback on field
+                r.selectStream(17);
+                double probability = r.random();
+                if(probability<GOBACK_PROBABILITY){ //la riparazione non ha sortito l'effetto desiderato
+                    double feedback = r.random();
+                    if(feedback < LEAVE_PROBABILTY){ //l'utente in questo caso decide di lasciare l'operatore rescindendo il contratto
+                        contrattoRescissoField++;
+                    }
+                    else if(feedback >= LEAVE_PROBABILTY && event[0].x == 1){
+                        feedbackField++;
+                        //il cliente richiama il centralino e ricomincia la procedura
+                        //ciò è possibile solo se non è ancora passato il close the door
+                        number++;
+                        if (number <= SERVERS) {
+                            service         = m.getServiceCentralino(r);
+                            s               = m.findOne(event); //id server
+                            System.out.println("s is " + s);
+                            sum[s].service += service;
+                            sum[s].served++;
+                            event[s].t      = t.current + service; //tempo di completamento
+                            event[s].x      = 1; //eleggibile per il next event
+                        }
+                        if (number > SERVERS){
+                            //genero abbandono se un job sta in coda
+                            System.out.println("arrivo di un job messo in coda e numero di job nel nodo = " + number);
+                            double at = m.getAbandon(PATIENCE_CENTRALINO, r) + t.current;
+                            abandons.add(at);
+                        }
+                    }
+                }
+
+
                 //cleanup abbandoni
                 if(!abandonsFH.isEmpty() && abandonsFH.get(0) < t.current) { //minore o minore uguale?
                     abandonsFH.remove(0);
@@ -687,9 +757,16 @@ class Msq {
                 " totale di: " + sum[SERVERS + 3].service);
         System.out.println("\nthe server statistics are:\n");
         System.out.println("    server     utilization     avg service      share");
+        //il tempo dell'ultima uscita da un centralino
+        double tFinalCentralino = 0.0;
+        for(s = 2; s <= SERVERS+1; s++){
+            if(event[s].t > tFinalCentralino){
+                tFinalCentralino = event[s].t;
+            }
+        }
         for (s = 2; s <= SERVERS+1; s++) {
             //System.out.println(s +" "+sum[s].service + " " +t.current);
-            System.out.print("       " + s + "          " + g.format(sum[s].service / t.current) + "            ");
+            System.out.print("       " + s + "          " + g.format(sum[s].service / tFinalCentralino) + "            ");
             System.out.println(f.format(sum[s].service / sum[s].served) + "         " + g.format(sum[s].served / (double)index));
         }
         int disp = 2+SERVERS +1;

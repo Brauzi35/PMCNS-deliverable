@@ -20,6 +20,10 @@ public final class SimulationValues {
     public static final double MEDIUM_PRIORITY_PROBABILITY = 0.1075;
 
 
+    public static final double GOBACK_PROBABILITY = 0.16;
+    public static final double LEAVE_PROBABILTY = 0.03;
+
+
     public static final int EVENT_ARRIVE_CENTRALINO = 1;
     public static final int EVENT_ABANDONMENT_CENTRALINO = 1;
     public static final int EVENT_ARRIVE_DISPATCHER = 1;
