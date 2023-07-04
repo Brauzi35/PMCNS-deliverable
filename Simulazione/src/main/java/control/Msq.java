@@ -105,6 +105,7 @@ class Msq {
 //cambiata condizione while
         while ((event[0].x != 0) || (number + numberDispatcher + remoto + field != 0)) {
 
+
             //System.out.println("number is "+number);
             System.out.println("stato server con number a: " + number + " e dispatcher number a: " + numberDispatcher +
                     " remoto a: " + remoto + " on field a: " + field);
@@ -435,26 +436,8 @@ class Msq {
                     if(feedback < LEAVE_PROBABILTY){ //l'utente in questo caso decide di lasciare l'operatore rescindendo il contratto
                         contrattoRescissoRemoto++;
                     }
-                    else if(feedback >= LEAVE_PROBABILTY && event[0].x == 1){
-                        feedbackRemoto++;
-                        //il cliente richiama il centralino e ricomincia la procedura
-                        //ciò è possibile solo se non è ancora passato il close the door
-                        number++;
-                        if (number <= SERVERS) {
-                            service         = m.getServiceCentralino(r);
-                            s               = m.findOne(event); //id server
-                            System.out.println("s is " + s);
-                            sum[s].service += service;
-                            sum[s].served++;
-                            event[s].t      = t.current + service; //tempo di completamento
-                            event[s].x      = 1; //eleggibile per il next event
-                        }
-                        if (number > SERVERS){
-                            //genero abbandono se un job sta in coda
-                            System.out.println("arrivo di un job messo in coda e numero di job nel nodo = " + number);
-                            double at = m.getAbandon(PATIENCE_CENTRALINO, r) + t.current;
-                            abandons.add(at);
-                        }
+                    else{
+                        feedbackRemoto++; //non lascia la telecom ma perdiamo i soldi della riparazione
                     }
                 }
 
@@ -621,26 +604,8 @@ class Msq {
                     if(feedback < LEAVE_PROBABILTY){ //l'utente in questo caso decide di lasciare l'operatore rescindendo il contratto
                         contrattoRescissoField++;
                     }
-                    else if(feedback >= LEAVE_PROBABILTY && event[0].x == 1){
-                        feedbackField++;
-                        //il cliente richiama il centralino e ricomincia la procedura
-                        //ciò è possibile solo se non è ancora passato il close the door
-                        number++;
-                        if (number <= SERVERS) {
-                            service         = m.getServiceCentralino(r);
-                            s               = m.findOne(event); //id server
-                            System.out.println("s is " + s);
-                            sum[s].service += service;
-                            sum[s].served++;
-                            event[s].t      = t.current + service; //tempo di completamento
-                            event[s].x      = 1; //eleggibile per il next event
-                        }
-                        if (number > SERVERS){
-                            //genero abbandono se un job sta in coda
-                            System.out.println("arrivo di un job messo in coda e numero di job nel nodo = " + number);
-                            double at = m.getAbandon(PATIENCE_CENTRALINO, r) + t.current;
-                            abandons.add(at);
-                        }
+                    else{
+                        feedbackField++; //non lascia la telecom ma perdiamo i soldi della riparazione
                     }
                 }
 
@@ -774,9 +739,15 @@ class Msq {
         System.out.println(f.format(sum[2+SERVERS +1].service / sum[2+SERVERS +1].served) + "         " + g.format(sum[2+SERVERS +1].served / (double)dispatched));
 
 
+        double tFinalRemoto = 0.0;
+        for(s = SERVERS + 7; s < SERVERS+7+SERVERS_REMOTI; s++){
+            if(event[s].t > tFinalRemoto){
+                tFinalRemoto = event[s].t;
+            }
+        }
         for (s = SERVERS + 7; s < SERVERS+7+SERVERS_REMOTI; s++) {
             //System.out.println(s +" "+sum[s].service + " " +t.current);
-            System.out.print("       " + s + "          " + g.format(sum[s].service / t.current) + "            ");
+            System.out.print("       " + s + "          " + g.format(sum[s].service / tFinalRemoto) + "            ");
             System.out.println(f.format(sum[s].service / sum[s].served) + "         " + g.format(sum[s].served / (double)indexRemoto));
         }
 
