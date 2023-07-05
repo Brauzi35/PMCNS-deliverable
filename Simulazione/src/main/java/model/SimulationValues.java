@@ -6,10 +6,10 @@ public final class SimulationValues {
     SimulationValues(){}
 
     public static final double START   = 0.0;            /* initial (open the door)        */
-    public static final double STOP    = 1800.0;        /* terminal (close the door) time */ //dalle 7 alle 24 in sec 61200.0; 55800 tolte 3 fasce
+    public static final double STOP    = 2000000.0;        /* terminal (close the door) time */ //dalle 7 alle 24 in sec 61200.0; 55800 tolte 3 fasce
     public static final int    SERVERS = 70;              /* number of servers              */
     public static final int    SERVERS_REMOTI = 56;
-    public static final int    SERVERS_FIELD_STD = 32;
+    public static final int    SERVERS_FIELD_STD = 250;
     public static final int    SERVERS_FIELD_SPECIAL = 5;
     public static final int    DISPATCHER_SERVICE_TIME = 5;
     public static final double [] PERCENTUALI = {0.001,    0.02,    0.03,    0.04,    0.0470,    0.049,    0.049,    0.048,    0.046,    0.042,    0.038,    0.0350,    0.0350,    0.037,    0.036,    0.035,    0.036,    0.037,    0.039,    0.04,    0.041,    0.041,    0.039,    0.034,    0.027,    0.018,    0.017,    0.015,    0.011,    0.006,    0.003};

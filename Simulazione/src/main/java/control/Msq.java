@@ -52,6 +52,7 @@ class Msq {
         double areaRemoto = 0.0;
         double areaField = 0.0;
         double areaRemotoQueue = 0.0;
+        double areaFieldQueue = 0.0;
         double service;
         double dispatched = 0;         /* number of dispatched tickets       */
         long remoto = 0; //index remoto
@@ -208,10 +209,13 @@ class Msq {
 
             System.out.println("Area dispatcher: " + areaDispatcher + " con tnext: " + t.next + " e tcurr: " + t.current);
             areaRemoto += (t.next - t.current) * remoto;
-            if(remoto > 0){
-                areaRemotoQueue += (t.next - t.current) * (remoto - 1);
+            if(remoto > SERVERS_REMOTI){
+                areaRemotoQueue += (t.next - t.current) * (remoto - SERVERS_REMOTI);
             }
             areaField += (t.next - t.current) * field;
+            if(field > SERVERS_FIELD_STD + SERVERS_FIELD_SPECIAL){
+                areaFieldQueue += (t.next - t.current) * (field - (SERVERS_FIELD_STD + SERVERS_FIELD_SPECIAL));
+            }
             t.current = t.next;                            /* advance the clock*/
 
             System.out.println("t current is: "+t.current);
@@ -727,14 +731,14 @@ class Msq {
             area -= sum[s].service;              /* averages for the queue   */
         }
 
-        double realTimeDispatcher = event[2+SERVERS+1].t-391;
+        double realTimeDispatcher = event[2+SERVERS+1].t-398.80;
         System.out.println("Real time dispatcher: " + realTimeDispatcher);
 
 
         System.out.println("\nfor " + dispatched + " jobs the DISPATCHER statistics are:\n");
         System.out.println("  avg interarrivals .. =   " + f.format(realTimeDispatcher / dispatched));
         System.out.println("  avg wait (response time)........... =   " + f.format(areaDispatcher / dispatched));
-        System.out.println("  avg # in node ...... =   " + f.format(areaDispatcher / realTimeDispatcher)); //event[2+SERVERS+1].t
+        System.out.println("  avg # in node ...... =   " + f.format(areaDispatcher / realTimeDispatcher )); //event[2+SERVERS+1].t
 
 
         areaDispatcher -= sum[ALL_EVENTS_CENTRALINO+1].service;
@@ -762,9 +766,6 @@ class Msq {
         System.out.println("  avg # in node ...... =   " + f.format(areaRemoto / (tFinalRemoto-398-525)));
         System.out.println("area remoto queue= " + areaRemotoQueue + " acchittamento: " + f.format(areaRemotoQueue /  (tFinalRemoto-398-525)));
 
-        for (s = ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + ALL_EVENTS_REMOTE + EVENTS_ARRIVE_PRIORITY_CLASS_FIELD; s < ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + ALL_EVENTS_REMOTE + EVENTS_ARRIVE_PRIORITY_CLASS_FIELD + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD; s++) {
-            areaField -= sum[s].service;
-        }
 
         double tFinalField = 0.0;
         double mediaField = 0.0;
@@ -776,15 +777,28 @@ class Msq {
         }
         mediaField = mediaField/SERVERS_FIELD_STD+SERVERS_FIELD_SPECIAL;
 
+        double lastArrivalField = 0.0;
+        int i = 0;
+        for(s = ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + ALL_EVENTS_REMOTE; s< ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + ALL_EVENTS_REMOTE + EVENTS_ARRIVE_PRIORITY_CLASS_FIELD; s++){
+            i++;
+            if(event[s].t> lastArrivalField){
+                lastArrivalField = event[s].t;
+            }
+        }
+
         System.out.println("\nfor " + indexField + " jobs the FIELD statistics are:\n");
-        System.out.println("  avg interarrivals .. =   " + f.format(tFinalField / indexField));
-        System.out.println("  avg wait ........... =   " + f.format(areaField / indexField));
-        System.out.println("  avg # in node ...... =   " + f.format(areaField / mediaField));
+        System.out.println("  avg interarrivals .. =   " + f.format((lastArrivalField - 444.0) / indexField));
+        System.out.println("  avg wait ........... =   " + f.format((areaField) / indexField));
+        System.out.println("  avg # in node ...... =   " + f.format(areaField / (tFinalField - 9185))); //9185 primo cmple
+
+        System.out.println("area remoto queue= " + areaFieldQueue + " acchittamento: " + f.format(areaFieldQueue /  (tFinalField - 9185)));
 
         /*for (s = 2; s <= SERVERS+1; s++) {
             area -= sum[s].service;
         }*/
-
+        for (s = ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + ALL_EVENTS_REMOTE + EVENTS_ARRIVE_PRIORITY_CLASS_FIELD; s < ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + ALL_EVENTS_REMOTE + EVENTS_ARRIVE_PRIORITY_CLASS_FIELD + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD; s++) {
+            areaField -= sum[s].service;
+        }
 
 
         System.out.println("  \navg # queue dispatcher: " + sum[SERVERS + 3].service/realTimeDispatcher);
