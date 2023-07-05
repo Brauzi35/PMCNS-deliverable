@@ -40,7 +40,7 @@ public final class SimulationValues {
     public static final int ALL_EVENTS_FIELD = EVENTS_ARRIVE_PRIORITY_CLASS_FIELD + EVENTS_ABANDONMENT_PRIORITY_CLASS_FIELD + SERVERS_FIELD_STD +SERVERS_FIELD_SPECIAL;
 
 
-    public static final int SERVICE_TIME_FIELD = 10800;
+    public static final int SERVICE_TIME_FIELD = 7200;
     public static final double CENTRALINO_MU_PARAM_LOGNORMAL = 5.97;
     public static final double CENTRALINO_SIGMA_PARAM_LOGNORMAL = 0.02761;
     public static final double REMOTE_MU_PARAM_LOGNORMAL = 6.263;

@@ -1,47 +1,30 @@
 package control;
 
 import model.FasciaOraria;
-import org.apache.commons.math3.analysis.differentiation.FiniteDifferencesDifferentiator;
+import model.Outputs;
+import utils.Estimate;
 import utils.Rngs;
-import utils.Rvms;
-import static model.SimulationValues.*;
+import utils.WriteDoubleListToFile;
 
-import java.lang.*;
-import java.text.*;
+import java.io.FileNotFoundException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static model.SimulationValues.*;
+import static model.SimulationValues.SERVERS;
 
-class MsqT {
-    double current;                   /* current time                       */
-    double next;                      /* next (most imminent) event time    */
-}
-
-class MsqSum {                      /* accumulated sums of                */
-    double service;                   /*   service times                    */
-    long   served;                    /*   number served                    */
-}
-
-class MsqEvent{                     /* the next-event list    */
-    double t;                         /*   next event time      */
-    int    x;                         /*   event status, 0 or 1 */
-}
+public class Replicazione {
 
 
-class Msq {
-
-
-    double sarrival = START;
     static List<FasciaOraria> fasce = new ArrayList<>();
 
+    static List<Outputs> outputList = new ArrayList<>();
 
 
-
-
-
-
-    public static void main(String[] args) {
+    void simulation(int streamIndex){
+        Outputs o = new Outputs();
 
         long   number = 0;             /* number in the node                 */
         long   numberDispatcher = 0;   /* number in dispathcer               */
@@ -74,8 +57,6 @@ class Msq {
 
         double previousDispTime = 0.0;
 
-        int idx = 1;
-
         Msq m = new Msq();
         Rngs r = new Rngs();
         r.plantSeeds(123456789);
@@ -104,7 +85,7 @@ class Msq {
         MsqT t = new MsqT();
 
         t.current    = START;
-        event[0].t   = m.getArrival(r, t.current, idx);
+        event[0].t   = m.getArrival(r, t.current, streamIndex);
         event[0].x   = 1;
 
         for (s = 1; s < ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + ALL_EVENTS_REMOTE + ALL_EVENTS_FIELD; s++) { //messo il + 2 perchè ho aggiunto il dispatcher e +14 per i due centri dei guasti?
@@ -117,6 +98,7 @@ class Msq {
 
 //cambiata condizione while
         while ((event[0].x != 0) || (number + numberDispatcher + remoto + field != 0)) {
+
 
             if(remoto > SERVERS_REMOTI) {
                 //System.out.println("remoto ha superato 54! " + remoto);
@@ -150,6 +132,7 @@ class Msq {
             }*/
 
             if(field < 0){
+                System.out.println("field < 0");
                 break;
             }
             //sarebbe meglio farlo dentro gli arrivi //todo
@@ -231,11 +214,11 @@ class Msq {
             if (e == EVENT_ARRIVE_CENTRALINO-1) {                                  /* process a callcenter arrival*/
                 //System.out.println("entrato in arrivals callcenter");
                 number++;
-                event[0].t        = m.getArrival(r, t.current, idx);
+                event[0].t        = m.getArrival(r, t.current, streamIndex);
                 if (event[0].t > STOP)
                     event[0].x      = 0; //close the door
                 if (number <= SERVERS) {
-                    service         = m.getServiceCentralino(r, idx);
+                    service         = m.getServiceCentralino(r, streamIndex);
                     s               = m.findOne(event); //id server
                     //System.out.println("s is " + s);
                     sum[s].service += service;
@@ -246,7 +229,7 @@ class Msq {
                 if (number > SERVERS){
                     //genero abbandono se un job sta in coda
                     //System.out.println("arrivo di un job messo in coda e numero di job nel nodo = " + number);
-                    double at = m.getAbandon(PATIENCE_CENTRALINO, r, idx) + t.current;
+                    double at = m.getAbandon(PATIENCE_CENTRALINO, r, streamIndex) + t.current;
                     abandons.add(at);
                 }
             }
@@ -282,7 +265,7 @@ class Msq {
                 numberDispatcher--;
                 dispatched++;
                 //System.out.println("entrato in partenze dispatcher");
-                r.selectStream(10);
+                r.selectStream(10 + streamIndex);
                 double rnd = r.random(); //mi dice se il job va on field oppure va remoto
                 double priority = r.random();
                 if(rnd<REMOTE_PROBABILITY){ //in remoto era 0.8
@@ -347,7 +330,7 @@ class Msq {
 
                 if(remoto <= SERVERS_REMOTI && abandonsRH.isEmpty() && abandonsRM.isEmpty()){
                     //processiamo i servizi
-                    service = m.getServiceRemote(r, idx); //cambiare!
+                    service = m.getServiceRemote(r, streamIndex); //cambiare!
                     s = m.findOneRemoto(event);
                     //System.out.println("s is: " + s);
                     sum[s].service +=service;
@@ -360,7 +343,7 @@ class Msq {
                 else{
                     //genero abbandono se un job sta in coda
                     //System.out.println("genero abbandono bassa");
-                    double at = m.getAbandon(PATIENCE_LOW_REMOTO, r, idx) + t.current;
+                    double at = m.getAbandon(PATIENCE_LOW_REMOTO, r, streamIndex) + t.current;
                     abandonsRL.add(at);
                 }
 
@@ -374,7 +357,7 @@ class Msq {
 
                 if(remoto <= SERVERS_REMOTI && abandonsRH.isEmpty()){
                     //processiamo i servizi
-                    service = m.getServiceRemote(r, idx); //cambiare!
+                    service = m.getServiceRemote(r, streamIndex); //cambiare!
                     s = m.findOneRemoto(event);
                     //System.out.println("s is: " + s);
                     sum[s].service +=service;
@@ -386,7 +369,7 @@ class Msq {
                 else{
                     //genero abbandono se un job sta in coda
                     //System.out.println("genero abbandono media");
-                    double at = m.getAbandon(PATIENCE_MEDIUM_REMOTO, r, idx) + t.current;
+                    double at = m.getAbandon(PATIENCE_MEDIUM_REMOTO, r, streamIndex) + t.current;
                     abandonsRM.add(at);
                 }
 
@@ -400,7 +383,7 @@ class Msq {
 
                 if(remoto <= SERVERS_REMOTI){
                     //processiamo i servizi
-                    service = m.getServiceRemote(r, idx); //cambiare!
+                    service = m.getServiceRemote(r, streamIndex); //cambiare!
                     s = m.findOneRemoto(event);
                     sum[s].service +=service;
                     sum[s].served++;
@@ -410,7 +393,7 @@ class Msq {
                 }
                 if(remoto > SERVERS_REMOTI){
                     //System.out.println("genero abbandono alta");
-                    double at = m.getAbandon(PATIENCE_HIGH_REMOTO, r, idx) + t.current;
+                    double at = m.getAbandon(PATIENCE_HIGH_REMOTO, r, streamIndex) + t.current;
                     abandonsRH.add(at);
                 }
 
@@ -454,7 +437,7 @@ class Msq {
 
 
                 //feedback remote
-                r.selectStream(18);
+                r.selectStream(18+ streamIndex);
                 double probability = r.random();
                 if(probability<GOBACK_PROBABILITY){ //la riparazione non ha sortito l'effetto desiderato
                     double feedback = r.random();
@@ -479,7 +462,7 @@ class Msq {
 
                 //servizio se c'è coda
                 if(remoto >= SERVERS_REMOTI){
-                    service         = m.getServiceRemote(r, idx);
+                    service         = m.getServiceRemote(r, streamIndex);
                     sum[s].service += service;
                     sum[s].served++;
                     event[s].t      = t.current + service;
@@ -509,7 +492,7 @@ class Msq {
 
                 if(field <= SERVERS_FIELD_STD && abandonsFH.isEmpty() && abandonsFM.isEmpty()){ //la coda di priorità bassa vede solo i server standard
                     //processiamo i servizi
-                    service = m.getServiceField(r, idx); //cambiare!
+                    service = m.getServiceField(r, streamIndex); //cambiare!
                     s = m.findOneFieldStd(event);
                     //System.out.println("s is: " + s);
                     sum[s].service +=service;
@@ -522,7 +505,7 @@ class Msq {
                 else{
                     //genero abbandono se un job sta in coda
                     //System.out.println("genero abbandono bassa");
-                    double at = m.getAbandon(PATIENCE_LOW_FIELD, r, idx) + t.current;
+                    double at = m.getAbandon(PATIENCE_LOW_FIELD, r, streamIndex) + t.current;
                     abandonsFL.add(at);
                 }
 
@@ -535,7 +518,7 @@ class Msq {
 
                 if(field <= SERVERS_FIELD_STD && abandonsFH.isEmpty()){ //la coda di priorità media vede solo i server standard
                     //processiamo i servizi
-                    service = m.getServiceField(r, idx); //cambiare!
+                    service = m.getServiceField(r, streamIndex); //cambiare!
                     s = m.findOneFieldStd(event);
                     //System.out.println("s is: " + s);
                     sum[s].service +=service;
@@ -548,7 +531,7 @@ class Msq {
                 else{
                     //genero abbandono se un job sta in coda
                     //System.out.println("genero abbandono bassa");
-                    double at = m.getAbandon(PATIENCE_MEDIUM_FIELD, r, idx) + t.current;
+                    double at = m.getAbandon(PATIENCE_MEDIUM_FIELD, r, streamIndex) + t.current;
                     abandonsFM.add(at);
                 }
 
@@ -561,7 +544,7 @@ class Msq {
 
                 if(field <= SERVERS_FIELD_STD + SERVERS_FIELD_SPECIAL){ //la coda di priorità alta vede i server standard + quelli dedicati
                     //processiamo i servizi
-                    service = m.getServiceField(r, idx); //cambiare!
+                    service = m.getServiceField(r, streamIndex); //cambiare!
                     s = m.findOneFieldSpecial(event);
                     //System.out.println("s is: " + s);
                     sum[s].service +=service;
@@ -574,7 +557,7 @@ class Msq {
                 else{
                     //genero abbandono se un job sta in coda
                     //System.out.println("genero abbandono bassa");
-                    double at = m.getAbandon(PATIENCE_HIGH_FIELD, r, idx) + t.current;
+                    double at = m.getAbandon(PATIENCE_HIGH_FIELD, r, streamIndex) + t.current;
                     abandonsFH.add(at);
                 }
 
@@ -622,7 +605,7 @@ class Msq {
 
 
                 //feedback on field
-                r.selectStream(17);
+                r.selectStream(17 + streamIndex);
                 double probability = r.random();
                 if(probability<GOBACK_PROBABILITY){ //la riparazione non ha sortito l'effetto desiderato
                     double feedback = r.random();
@@ -651,17 +634,17 @@ class Msq {
                 if(s>= 2 + SERVERS + 2 + 3 + 3 + SERVERS_REMOTI + 3 && s<  2 + SERVERS + 2 + 3 + 3 + SERVERS_REMOTI + 3 + SERVERS_FIELD_SPECIAL && !abandonsFH.isEmpty()){
                     //if(!abandonsFH.isEmpty()){
 
-                        abandonsFH.remove(0); //prendo un job dalla coda ad alta priorità
-                        service         = m.getServiceField(r, idx);
-                        sum[s].service += service;
-                        sum[s].served++;
-                        event[s].t      = t.current + service;
-                   // }
+                    abandonsFH.remove(0); //prendo un job dalla coda ad alta priorità
+                    service         = m.getServiceField(r, streamIndex);
+                    sum[s].service += service;
+                    sum[s].served++;
+                    event[s].t      = t.current + service;
+                    // }
                 }
 
 
                 else if(s>= ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE+EVENTS_ARRIVE_PRIORITY_CLASS_FIELD+SERVERS_FIELD_SPECIAL && s <  ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE+EVENTS_ARRIVE_PRIORITY_CLASS_FIELD+SERVERS_FIELD_SPECIAL+SERVERS_FIELD_STD + 1 && size!=0){
-                    service         = m.getServiceField(r, idx);
+                    service         = m.getServiceField(r, streamIndex);
                     sum[s].service += service;
                     sum[s].served++;
                     event[s].t      = t.current + service;
@@ -699,7 +682,7 @@ class Msq {
 
 
                 if (number >= SERVERS) { //se ho coda
-                    service         = m.getServiceCentralino(r, idx);
+                    service         = m.getServiceCentralino(r, streamIndex);
                     sum[s].service += service;
                     sum[s].served++;
                     event[s].t      = t.current + service;
@@ -728,24 +711,46 @@ class Msq {
         }
         mediaCentralino = mediaCentralino/SERVERS;
 
-        System.out.println("\nfor " + index + " jobs the CENTRALINO statistics are:\n");
-        System.out.println("  avg interarrivals .. =   " + f.format(event[0].t / index));
-        System.out.println("  avg wait (response time) ........... =   " + f.format(area / index));
-        System.out.println("  avg # in centralino ...... =   " + f.format(area / mediaCentralino));
+        double sumService = 0.0;
+        for(s = 2; s <= SERVERS+1; s++){
+
+                sumService += sum[s].service;
+
+        }
+        sumService = sumService/SERVERS;
+
+        //System.out.println("\nfor " + index + " jobs the CENTRALINO statistics are:\n");
+        //System.out.println("  avg interarrivals .. =   " + f.format(event[0].t / index));
+        o.setResponseTimeCentralino(area / index);
+        o.setUtilizzazioneCentralino(sumService/tFinalCentralino);
+        o.setInterarrivoCentralino(event[0].t / index);
+        o.setNumeroCentralino(area / mediaCentralino);
+        //System.out.println("  avg wait (response time) ........... =   " + f.format(area / index));
+        //System.out.println("  avg # in centralino ...... =   " + f.format(area / mediaCentralino));
 
         for (s = 2; s <= SERVERS+1; s++) {      /* adjust area to calculate */
             area -= sum[s].service;              /* averages for the queue   */
         }
 
         double realTimeDispatcher = event[2+SERVERS+1].t-398.80;
-        System.out.println("Real time dispatcher: " + realTimeDispatcher);
+        //System.out.println("Real time dispatcher: " + realTimeDispatcher);
+        double sumDisp = 0.0;
 
 
-        System.out.println("\nfor " + dispatched + " jobs the DISPATCHER statistics are:\n");
-        System.out.println("  avg interarrivals .. =   " + f.format(realTimeDispatcher / dispatched));
-        System.out.println("  avg wait (response time)........... =   " + f.format(areaDispatcher / dispatched));
-        System.out.println("  avg # in node ...... =   " + f.format(areaDispatcher / realTimeDispatcher )); //event[2+SERVERS+1].t
+            sumDisp += sum[SERVERS+3].service;
 
+
+        sumDisp = sumService/SERVERS;
+
+
+        //System.out.println("\nfor " + dispatched + " jobs the DISPATCHER statistics are:\n");
+        //System.out.println("  avg interarrivals .. =   " + f.format(realTimeDispatcher / dispatched));
+        //System.out.println("  avg wait (response time)........... =   " + f.format(areaDispatcher / dispatched));
+        //System.out.println("  avg # in node ...... =   " + f.format(areaDispatcher / realTimeDispatcher )); //event[2+SERVERS+1].t
+        o.setResponseTimeDispatcher(areaDispatcher / dispatched);
+        o.setUtilizzazioneDispatcher(sum[SERVERS+3].service/realTimeDispatcher);
+        o.setInterarrivoDispatcher(realTimeDispatcher / dispatched);
+        o.setNumeroDispatcher(areaDispatcher / realTimeDispatcher);
 
         areaDispatcher -= sum[ALL_EVENTS_CENTRALINO+1].service;
 
@@ -753,7 +758,7 @@ class Msq {
         double tFinalRemoto = 0.0;
         double mediaRemoto = 0.0;
         for(s = SERVERS + 7; s < SERVERS+7+SERVERS_REMOTI; s++){
-            mediaRemoto += event[s].t;
+            mediaRemoto += sum[s].service;
             if(event[s].t > tFinalRemoto){
                 tFinalRemoto = event[s].t;
             }
@@ -765,23 +770,30 @@ class Msq {
             }
         }
         mediaRemoto = mediaRemoto/SERVERS_REMOTI;
-        System.out.println("cercami: " + tFinalRemoto);
-        System.out.println("\nfor " + indexRemoto + " jobs the REMOTO statistics are:\n");
-        System.out.println("  avg interarrivals .. =   " + f.format((lastArrivalRemoto-398) / indexRemoto));
-        System.out.println("  avg wait (service time) ........... =   " + f.format(areaRemoto / indexRemoto));
-        System.out.println("  avg # in node ...... =   " + f.format(areaRemoto / (tFinalRemoto-398-525)));
-        System.out.println("area remoto queue= " + areaRemotoQueue + " acchittamento: " + f.format(areaRemotoQueue /  (tFinalRemoto-398-525)));
+        //System.out.println("cercami: " + tFinalRemoto);
+        //System.out.println("\nfor " + indexRemoto + " jobs the REMOTO statistics are:\n");
+        //System.out.println("  avg interarrivals .. =   " + f.format((lastArrivalRemoto-398) / indexRemoto));
+        //System.out.println("  avg wait (service time) ........... =   " + f.format(areaRemoto / indexRemoto));
+        //System.out.println("  avg # in node ...... =   " + f.format(areaRemoto / (tFinalRemoto-398-525)));
+        //System.out.println("area remoto queue= " + areaRemotoQueue + " acchittamento: " + f.format(areaRemotoQueue /  (tFinalRemoto-398-525)));
+        System.out.println(lastArrivalRemoto + " prova 22222 last arr" + "index = " + indexRemoto);
+        o.setResponseTimeRemoto(areaRemoto / indexRemoto);
+
+        o.setUtilizzazioneRemoto(mediaRemoto/tFinalRemoto);
+        o.setInterarrivoRemoto((lastArrivalRemoto-398) / indexRemoto);
+        System.out.println(lastArrivalRemoto + " prova last arr" + "index = " + indexRemoto);
+        o.setNumeroRemoto(areaRemoto / (tFinalRemoto-398-525));
 
 
         double tFinalField = 0.0;
         double mediaField = 0.0;
         for(s = ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + ALL_EVENTS_REMOTE + EVENTS_ARRIVE_PRIORITY_CLASS_FIELD; s < ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + ALL_EVENTS_REMOTE + EVENTS_ARRIVE_PRIORITY_CLASS_FIELD + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD; s++){
-            mediaField += event[s].t;
+            mediaField += sum[s].service;
             if(event[s].t > tFinalField){
                 tFinalField = event[s].t;
             }
         }
-        mediaField = mediaField/SERVERS_FIELD_STD+SERVERS_FIELD_SPECIAL;
+        mediaField = mediaField/(SERVERS_FIELD_STD+SERVERS_FIELD_SPECIAL);
 
         double lastArrivalField = 0.0;
         int i = 0;
@@ -792,12 +804,17 @@ class Msq {
             }
         }
 
-        System.out.println("\nfor " + indexField + " jobs the FIELD statistics are:\n");
-        System.out.println("  avg interarrivals .. =   " + f.format((lastArrivalField - 444.0) / indexField));
-        System.out.println("  avg wait ........... =   " + f.format((areaField) / indexField));
-        System.out.println("  avg # in node ...... =   " + f.format(areaField / (tFinalField - 9185))); //9185 primo cmple
+        //System.out.println("\nfor " + indexField + " jobs the FIELD statistics are:\n");
+        //System.out.println("  avg interarrivals .. =   " + f.format((lastArrivalField - 444.0) / indexField));
+        //System.out.println("  avg wait ........... =   " + f.format((areaField) / indexField));
+        //System.out.println("  avg # in node ...... =   " + f.format(areaField / (tFinalField - 9185))); //9185 primo cmple
 
-        System.out.println("area remoto queue= " + areaFieldQueue + " acchittamento: " + f.format(areaFieldQueue /  (tFinalField - 9185)));
+        //System.out.println("area remoto queue= " + areaFieldQueue + " acchittamento: " + f.format(areaFieldQueue /  (tFinalField - 9185)));
+
+        o.setResponseTimeOnField(areaField / indexField);
+        //o.setUtilizzazioneOnField(mediaField/tFinalField);
+        o.setInterarrivoOnField((lastArrivalField-444.0) / indexField);
+        o.setNumeroOnField(areaField / (tFinalField- 9185));
 
         /*for (s = 2; s <= SERVERS+1; s++) {
             area -= sum[s].service;
@@ -807,11 +824,16 @@ class Msq {
         }
 
 
-        System.out.println("  \navg # queue dispatcher: " + sum[SERVERS + 3].service/realTimeDispatcher);
-        System.out.println("  area disp: " + areaDispatcher);
+        //System.out.println("  \navg # queue dispatcher: " + sum[SERVERS + 3].service/realTimeDispatcher);
+        //System.out.println("  area disp: " + areaDispatcher);
 
-        System.out.println("  avg delay .......... =   " + f.format(area / index));
-        System.out.println("  avg # in queue ..... =   " + f.format(areaDispatcher / realTimeDispatcher));
+        //System.out.println("  avg delay .......... =   " + f.format(area / index));
+        o.setWaitingTimeCentralino((area / index));
+        o.setWaitingTimeDispatcher(areaDispatcher / dispatched);
+        o.setWaitingTimeRemoto(areaRemoto / indexRemoto);
+        o.setWaitingTimeOnField(areaField / indexField);
+        //System.out.println("  avg # in queue ..... =   " + f.format(areaDispatcher / realTimeDispatcher));
+        /*
         System.out.println("  abandons ........... =   " + abandon);
         System.out.println("  abandons in FH........... =   " + abandonFH);
         System.out.println("  abandons in FM........... =   " + abandonFM);
@@ -823,6 +845,8 @@ class Msq {
                 " totale di: " + sum[SERVERS + 3].service);
         System.out.println("\nthe server statistics are:\n");
         System.out.println("    server     utilization     avg service      share");
+
+         */
         //il tempo dell'ultima uscita da un centralino
 
         /*for (s = 2; s <= SERVERS+1; s++) {
@@ -857,192 +881,68 @@ class Msq {
         System.out.println("media poisson:  " + fasce.get(1).getMediaPoisson());
 
         System.out.println(""); */
+        outputList.add(o);
     }
 
+    public static void main(String[] args) throws FileNotFoundException, InterruptedException {
 
-    double exponential(double m, Rngs r) {
-        /* ---------------------------------------------------
-         * generate an Exponential random variate, use m > 0.0
-         * ---------------------------------------------------
-         */
-        return (-m * Math.log(1.0 - r.random()));
-    }
+        Msq msq = new Msq();
+        msq.initFasce();
 
-    double uniform(double a, double b, Rngs r) {
-        /* --------------------------------------------
-         * generate a Uniform random variate, use a < b
-         * --------------------------------------------
-         */
-        return (a + (b - a) * r.random());
-    }
+        for(int i = 0; i<100; i++){
 
-    double getAbandon(double patience, Rngs r, int streamIndex){
-        r.selectStream(1 + streamIndex);
-        //double theta = 1/patience;   // tasso di interabbandono
-        //System.out.println("Il tasso di abbandono: " + patience);
-        patience = 999999999;
-        return (-patience * Math.log(1.0 - r.random()));
-    }
-
-    double getArrival(Rngs r, double currentTime, int streamIndex) {
-        /* --------------------------------------------------------------
-         * generate the next arrival time, with rate 1/2
-         * --------------------------------------------------------------
-         */
-        r.selectStream(0 + streamIndex);
-        int index = FasciaOrariaController.fasciaOrariaSwitch(fasce, currentTime);
-
-        Rvms rvms = new Rvms();
-
-        sarrival += rvms.idfPoisson(fasce.get(1).getMediaPoisson(), r.random()); //deve diventare poissoniana
-        //System.out.println("media poisson:  " + fasce.get(1).getMediaPoisson());
-        //sarrival += exponential(2.0, r);
-        //sarrival += rvms.idfPoisson(3.26, r.random());
-        return (sarrival);
-    }
-
-
-    double getServiceCentralino(Rngs r, int streamIndex) {
-        /* ------------------------------
-         * generate the next service time, with rate 1/6
-         * ------------------------------
-         */
-        Rvms rvms = new Rvms();
-        r.selectStream(1 + streamIndex);
-        //return (uniform(2.0, 10.0, r));
-        return rvms.idfLogNormal(CENTRALINO_MU_PARAM_LOGNORMAL, CENTRALINO_SIGMA_PARAM_LOGNORMAL, r.random());
-    }
-
-    double getServiceField(Rngs r, int streamIndex){
-        // Esponenziale
-        r.selectStream(20 + streamIndex);
-        double m = SERVICE_TIME_FIELD;  // 3h = 10800s
-        return (-m * Math.log(1.0 - r.random()));
-    }
-
-    double getServiceRemote(Rngs r, int streamIndex){
-        Rvms rvms = new Rvms();
-        r.selectStream(1 + streamIndex);
-        //return (uniform(2.0, 10.0, r));
-        return rvms.idfLogNormal(REMOTE_MU_PARAM_LOGNORMAL, REMOTE_SIGMA_PARAM_LOGNORMAL, r.random());
-    }
-
-
-    int nextEvent(MsqEvent [] event) {
-        /* ---------------------------------------
-         * return the index of the next event type
-         * ---------------------------------------
-         */
-        int e;
-        int i = 0;
-
-        while (event[i].x == 0)       /* find the index of the first 'active' */
-            i++;                        /* element in the event list            */
-        e = i;
-        while (i < ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE+ALL_EVENTS_FIELD-1) {      //messo +1, ora +3 /* now, check the others to find which  */
-            i++;                        /* event type is most imminent          */
-            if ((event[i].x == 1) && (event[i].t < event[e].t))
-                e = i;
+            Replicazione rep = new Replicazione();
+            rep.simulation(i);
         }
-        return (e);
+
+        List<Double> responseTimeCentralinoList = new ArrayList<>();
+        List<Double> responseTimeDispList = new ArrayList<>();
+        List<Double> responseTimeRemotoList = new ArrayList<>();
+        List<Double> responseTimeFieldList = new ArrayList<>();
+
+        List<Double> interarrivalCentralinoList = new ArrayList<>();
+        List<Double> interarrivalDispList = new ArrayList<>();
+        List<Double> interarrivalRemotoList = new ArrayList<>();
+        List<Double> interarrivalFieldList = new ArrayList<>();
+
+
+
+        for(int i = 0; i<100; i++){
+            responseTimeCentralinoList.add(outputList.get(i).getResponseTimeCentralino());
+            responseTimeDispList.add(outputList.get(i).getResponseTimeDispatcher());
+            responseTimeRemotoList.add(outputList.get(i).getResponseTimeRemoto());
+            responseTimeFieldList.add(outputList.get(i).getResponseTimeOnField());
+
+            interarrivalCentralinoList.add(outputList.get(i).getInterarrivoCentralino());
+            interarrivalDispList.add(outputList.get(i).getInterarrivoDispatcher());
+            interarrivalRemotoList.add(outputList.get(i).getInterarrivoRemoto());
+            interarrivalFieldList.add(outputList.get(i).getInterarrivoOnField());
+        }
+
+        WriteDoubleListToFile wdltf = new WriteDoubleListToFile();
+        wdltf.scrivi(responseTimeCentralinoList, "responseTimeCentralino");
+        wdltf.scrivi(responseTimeDispList, "responseTimeDisp");
+        wdltf.scrivi(responseTimeRemotoList, "responseTimeRemoto");
+        wdltf.scrivi(responseTimeFieldList, "responseTimeOnField");
+        wdltf.scrivi(interarrivalCentralinoList, "interarrivoCentralino");
+        wdltf.scrivi(interarrivalDispList, "interarrivoDisp");
+        wdltf.scrivi(interarrivalRemotoList, "interarrivoRemoto");
+        wdltf.scrivi(interarrivalFieldList, "interarrivoOnField");
+
+
+
+
+        List<String> names = List.of("responseTimeCentralino", "responseTimeDisp", "responseTimeRemoto"
+                , "responseTimeOnField", "interarrivoCentralino", "interarrivoDisp", "interarrivoRemoto",
+                "interarrivoOnField");
+        Estimate est = new Estimate();
+        for(String str : names){
+            System.out.println(str);
+            est.intervals(str);
+            System.out.println("\n------------------------------\n");
+        }
+
+
+
     }
-
-    int findOne(MsqEvent [] event) {
-        /* -----------------------------------------------------
-         * return the index of the available server idle longest
-         * -----------------------------------------------------
-         */
-        int s;
-        int i = 2; //prima era 1
-
-        while (event[i].x == 1 ) {     /* find the index of the first available */
-            //System.out.println(i+" "+event[i].x);
-            i++;    /* (idle) server                         */
-
-        }
-        s = i;
-        while (i < SERVERS+1) {     //aggiunto +1    /* now, check the others to find which   */
-            i++;                        /* has been idle longest                 */
-            if ((event[i].x == 0) && (event[i].t < event[s].t))
-                s = i;
-        }
-        return (s);
-    }
-
-    int findOneRemoto(MsqEvent [] event) {
-        /* -----------------------------------------------------
-         * return the index of the available server idle longest
-         * -----------------------------------------------------
-         */
-        int s;
-        int i = ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+EVENTS_ARRIVE_PRIORITY_CLASS_REMOTE;
-
-        while (event[i].x == 1 ) {     /* find the index of the first available */
-            //System.out.println(i+" "+event[i].x);
-            i++;    /* (idle) server                         */
-
-        }
-        s = i;
-        while (i < ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+EVENTS_ARRIVE_PRIORITY_CLASS_REMOTE+SERVERS_REMOTI-1) {         /* now, check the others to find which   */
-            i++;                        /* has been idle longest                 */
-            if ((event[i].x == 0) && (event[i].t < event[s].t))
-                s = i;
-        }
-        return (s);
-    }
-
-    int findOneFieldStd(MsqEvent [] event) {
-        /* -----------------------------------------------------
-         * return the index of the available server idle longest
-         * -----------------------------------------------------
-         */
-        int s;
-        int i = ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE+EVENTS_ARRIVE_PRIORITY_CLASS_FIELD+SERVERS_FIELD_SPECIAL;
-
-        while (event[i].x == 1 ) {     /* find the index of the first available */
-            //System.out.println(i+" "+event[i].x);
-            i++;    /* (idle) server                         */
-
-        }
-        s = i;
-        while (i < ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE+EVENTS_ARRIVE_PRIORITY_CLASS_FIELD+SERVERS_FIELD_SPECIAL+SERVERS_FIELD_STD -1) {         /* now, check the others to find which   */
-            i++;                        /* has been idle longest                 */
-            if ((event[i].x == 0) && (event[i].t < event[s].t))
-                s = i;
-        }
-        return (s);
-    }
-
-    int findOneFieldSpecial(MsqEvent [] event) {
-        /* -----------------------------------------------------
-         * return the index of the available server idle longest
-         * -----------------------------------------------------
-         */
-        int s;
-        int i = ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE+EVENTS_ARRIVE_PRIORITY_CLASS_FIELD;
-
-        while (event[i].x == 1 ) {     /* find the index of the first available */
-            //System.out.println(i+" "+event[i].x);
-            i++;    /* (idle) server                         */
-
-        }
-        s = i;
-        while (i < ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE+EVENTS_ARRIVE_PRIORITY_CLASS_FIELD+SERVERS_FIELD_SPECIAL+SERVERS_FIELD_STD -1) {         /* now, check the others to find which   */
-            i++;                        /* has been idle longest                 */
-            if ((event[i].x == 0) && (event[i].t < event[s].t))
-                s = i;
-        }
-        return (s);
-    }
-
-    void initFasce(){
-        for(int f = 0; f<31; f++){ //sono 34 fasce orarie da mezz'ora
-            FasciaOraria fo = new FasciaOraria(PERCENTUALI[f], 10958, 0 + 1800*f, 1800*(f+1)-1);
-            fasce.add(fo); //popolo array fasce orarie dinamicamente
-        }
-    }
-
-
-
-
 }
