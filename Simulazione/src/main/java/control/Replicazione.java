@@ -912,6 +912,16 @@ public class Replicazione {
         List<Double> utilRemotoList = new ArrayList<>();
         List<Double> utilFieldList = new ArrayList<>();
 
+        List<Double> numberJobCentralinoList = new ArrayList<>();
+        List<Double> numberJobDispList = new ArrayList<>();
+        List<Double> numberJobRemotoList = new ArrayList<>();
+        List<Double> numberJobFieldList = new ArrayList<>();
+
+        List<Double> waitingCentralinoList = new ArrayList<>();
+        List<Double> waitingJobDispList = new ArrayList<>();
+        List<Double> waitingJobRemotoList = new ArrayList<>();
+        List<Double> waitingJobFieldList = new ArrayList<>();
+
 
 
 
@@ -930,6 +940,20 @@ public class Replicazione {
             utilDispList.add(outputList.get(i).getUtilizzazioneDispatcher());
             utilRemotoList.add(outputList.get(i).getUtilizzazioneRemoto());
             utilFieldList.add(outputList.get(i).getUtilizzazioneOnField());
+
+            numberJobCentralinoList.add(outputList.get(i).getNumeroCentralino());
+            numberJobDispList.add(outputList.get(i).getNumeroDispatcher());
+            numberJobRemotoList.add(outputList.get(i).getNumeroRemoto());
+            numberJobFieldList.add(outputList.get(i).getNumeroOnField());
+
+            waitingCentralinoList.add(outputList.get(i).getWaitingTimeCentralino());
+            waitingJobDispList.add(outputList.get(i).getWaitingTimeDispatcher());
+            waitingJobRemotoList.add(outputList.get(i).getWaitingTimeRemoto());
+            waitingJobFieldList.add(outputList.get(i).getWaitingTimeOnField());
+
+
+
+
         }
 
         WriteDoubleListToFile wdltf = new WriteDoubleListToFile();
@@ -948,12 +972,25 @@ public class Replicazione {
         wdltf.scrivi(utilRemotoList, "utilRemoto");
         wdltf.scrivi(utilFieldList, "utilOnField");
 
+        wdltf.scrivi(numberJobCentralinoList, "numberJobCentralino");
+        wdltf.scrivi(numberJobDispList, "numberJobDispatcher");
+        wdltf.scrivi(numberJobRemotoList, "numberJobRemoto");
+        wdltf.scrivi(numberJobFieldList, "numberJobOnField");
+
+        wdltf.scrivi(waitingCentralinoList, "waitingCentralino");
+        wdltf.scrivi(waitingJobDispList, "waitingDispatcher");
+        wdltf.scrivi(waitingJobRemotoList, "waitingJobRemoto");
+        wdltf.scrivi(waitingJobFieldList, "waitingJobOnField");
 
 
+        //tempo attesa, tempo rispostaok , utilizzazione ok, numero job sist, intearrivo ok
 
         List<String> names = List.of("responseTimeCentralino", "responseTimeDisp", "responseTimeRemoto"
                 , "responseTimeOnField", "interarrivoCentralino", "interarrivoDisp", "interarrivoRemoto",
-                "interarrivoOnField", "utilCentralino", "utilDisp", "utilRemoto", "utilOnField");
+                "interarrivoOnField", "utilCentralino", "utilDisp", "utilRemoto", "utilOnField", "numberJobCentralino",
+                "numberJobDispatcher", "numberJobRemoto", "numberJobOnField", "waitingCentralino", "waitingDispatcher",
+                "waitingJobRemoto", "waitingJobOnField" );
+
         Estimate est = new Estimate();
         for(String str : names){
             System.out.println(str);
