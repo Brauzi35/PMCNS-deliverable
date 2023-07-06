@@ -722,7 +722,7 @@ public class Replicazione {
         //System.out.println("\nfor " + index + " jobs the CENTRALINO statistics are:\n");
         //System.out.println("  avg interarrivals .. =   " + f.format(event[0].t / index));
         o.setResponseTimeCentralino(area / index);
-        System.out.println("area/index " + (area / index) + " area is: " + area + " index is: " + index);
+        //System.out.println("area/index " + (area / index) + " area is: " + area + " index is: " + index);
         o.setUtilizzazioneCentralino(sumService/tFinalCentralino);
         o.setInterarrivoCentralino(event[0].t / index);
         o.setNumeroCentralino(area / mediaCentralino);
@@ -777,12 +777,12 @@ public class Replicazione {
         //System.out.println("  avg wait (service time) ........... =   " + f.format(areaRemoto / indexRemoto));
         //System.out.println("  avg # in node ...... =   " + f.format(areaRemoto / (tFinalRemoto-398-525)));
         //System.out.println("area remoto queue= " + areaRemotoQueue + " acchittamento: " + f.format(areaRemotoQueue /  (tFinalRemoto-398-525)));
-        System.out.println(lastArrivalRemoto + " prova 22222 last arr" + "index = " + indexRemoto);
+        //System.out.println(lastArrivalRemoto + " prova 22222 last arr" + "index = " + indexRemoto);
         o.setResponseTimeRemoto(areaRemoto / indexRemoto);
 
         o.setUtilizzazioneRemoto(mediaRemoto/tFinalRemoto);
         o.setInterarrivoRemoto((lastArrivalRemoto-398) / indexRemoto);
-        System.out.println(lastArrivalRemoto + " prova last arr" + "index = " + indexRemoto);
+        //System.out.println(lastArrivalRemoto + " prova last arr" + "index = " + indexRemoto);
         o.setNumeroRemoto(areaRemoto / (tFinalRemoto-398-525));
 
 
@@ -891,7 +891,7 @@ public class Replicazione {
         Msq msq = new Msq();
         msq.initFasce();
 
-        for(int i = 0; i<100; i++){
+        for(int i = 0; i<1024; i++){
 
             Replicazione rep = new Replicazione();
             rep.simulation(i);
@@ -915,7 +915,7 @@ public class Replicazione {
 
 
 
-        for(int i = 0; i<100; i++){
+        for(int i = 0; i<1024; i++){
             responseTimeCentralinoList.add(outputList.get(i).getResponseTimeCentralino());
             responseTimeDispList.add(outputList.get(i).getResponseTimeDispatcher());
             responseTimeRemotoList.add(outputList.get(i).getResponseTimeRemoto());
