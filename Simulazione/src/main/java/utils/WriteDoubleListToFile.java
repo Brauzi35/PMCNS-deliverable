@@ -16,6 +16,10 @@ public class WriteDoubleListToFile {
             for (double num : doubleList) {
                 if(!Double.isNaN(num)) {
                     printWriter.println(num);
+
+                }
+                else{
+                    System.out.println("NaN!");
                 }
             }
 

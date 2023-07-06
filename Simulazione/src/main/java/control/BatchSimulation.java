@@ -1,47 +1,29 @@
 package control;
 
 import model.FasciaOraria;
-import org.apache.commons.math3.analysis.differentiation.FiniteDifferencesDifferentiator;
 import utils.Rngs;
-import utils.Rvms;
-import static model.SimulationValues.*;
+import utils.WriteDoubleListToFile;
 
-import java.lang.*;
-import java.text.*;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static model.SimulationValues.*;
+import static model.SimulationValues.SERVERS;
 
-class MsqT {
-    double current;                   /* current time                       */
-    double next;                      /* next (most imminent) event time    */
-}
+public class BatchSimulation {
 
-class MsqSum {                      /* accumulated sums of                */
-    double service;                   /*   service times                    */
-    long   served;                    /*   number served                    */
-}
-
-class MsqEvent{                     /* the next-event list    */
-    double t;                         /*   next event time      */
-    int    x;                         /*   event status, 0 or 1 */
-}
-
-
-class Msq {
-
-
-    double sarrival = START;
     static List<FasciaOraria> fasce = new ArrayList<>();
 
 
 
 
+    public void batchSim(){
 
 
 
-    public static void main(String[] args) {
+        List<Double> batchResponseTimeCentralinoList = new ArrayList<>();
 
         long   number = 0;             /* number in the node                 */
         long   numberDispatcher = 0;   /* number in dispathcer               */
@@ -77,6 +59,7 @@ class Msq {
         int idx = 1;
 
         Msq m = new Msq();
+        m.initFasce();
         Rngs r = new Rngs();
         r.plantSeeds(123456789);
 
@@ -116,10 +99,19 @@ class Msq {
 
 
 //cambiata condizione while
-        while ((event[0].x != 0) || (number + numberDispatcher + remoto + field != 0)) {
+        while ((event[0].x != 0)) {
 
-            if(remoto > SERVERS_REMOTI) {
-                //System.out.println("remoto ha superato 54! " + remoto);
+            /*
+
+             */
+
+            System.out.println(t.current);
+
+            if(index != 0 && index % 1024 == 0){
+
+                batchResponseTimeCentralinoList.add(area / index);
+                area = 0.0;
+                index = 0;
             }
 
             //System.out.println("number is "+number);
@@ -232,7 +224,7 @@ class Msq {
                 //System.out.println("entrato in arrivals callcenter");
                 number++;
                 event[0].t        = m.getArrival(r, t.current, idx);
-                if (event[0].t > STOP)
+                if (event[0].t > STOP_BATCH)
                     event[0].x      = 0; //close the door
                 if (number <= SERVERS) {
                     service         = m.getServiceCentralino(r, idx);
@@ -651,12 +643,12 @@ class Msq {
                 if(s>= 2 + SERVERS + 2 + 3 + 3 + SERVERS_REMOTI + 3 && s<  2 + SERVERS + 2 + 3 + 3 + SERVERS_REMOTI + 3 + SERVERS_FIELD_SPECIAL && !abandonsFH.isEmpty()){
                     //if(!abandonsFH.isEmpty()){
 
-                        abandonsFH.remove(0); //prendo un job dalla coda ad alta priorità
-                        service         = m.getServiceField(r, idx);
-                        sum[s].service += service;
-                        sum[s].served++;
-                        event[s].t      = t.current + service;
-                   // }
+                    abandonsFH.remove(0); //prendo un job dalla coda ad alta priorità
+                    service         = m.getServiceField(r, idx);
+                    sum[s].service += service;
+                    sum[s].served++;
+                    event[s].t      = t.current + service;
+                    // }
                 }
 
 
@@ -714,6 +706,9 @@ class Msq {
 
             //System.out.println("FINE ITERAZIONE\n\n");
         }
+
+        WriteDoubleListToFile w = new WriteDoubleListToFile();
+        w.scrivi(batchResponseTimeCentralinoList, "batchResponseTimeCent");
 
         DecimalFormat f = new DecimalFormat("###0.00");
         DecimalFormat g = new DecimalFormat("###0.000");
@@ -860,191 +855,11 @@ class Msq {
         System.out.println(""); */
     }
 
-
-    double exponential(double m, Rngs r) {
-        /* ---------------------------------------------------
-         * generate an Exponential random variate, use m > 0.0
-         * ---------------------------------------------------
-         */
-        return (-m * Math.log(1.0 - r.random()));
+    public static void main(String[] args) {
+        BatchSimulation bs = new BatchSimulation();
+        bs.batchSim();
     }
 
-    double uniform(double a, double b, Rngs r) {
-        /* --------------------------------------------
-         * generate a Uniform random variate, use a < b
-         * --------------------------------------------
-         */
-        return (a + (b - a) * r.random());
-    }
-
-    double getAbandon(double patience, Rngs r, int streamIndex){
-        r.selectStream(1 + streamIndex);
-        //double theta = 1/patience;   // tasso di interabbandono
-        //System.out.println("Il tasso di abbandono: " + patience);
-        //patience = 999999999;
-        //return (-patience * Math.log(1.0 - r.random()));
-        return 999999999;
-    }
-
-    double getArrival(Rngs r, double currentTime, int streamIndex) {
-        /* --------------------------------------------------------------
-         * generate the next arrival time, with rate 1/2
-         * --------------------------------------------------------------
-         */
-        r.selectStream(0 + streamIndex);
-        int index = FasciaOrariaController.fasciaOrariaSwitch(fasce, currentTime);
-
-        Rvms rvms = new Rvms();
-
-        sarrival += rvms.idfPoisson(fasce.get(2).getMediaPoisson(), r.random()); //deve diventare poissoniana
-        //System.out.println("media poisson:  " + fasce.get(1).getMediaPoisson());
-        //sarrival += exponential(2.0, r);
-        //sarrival += rvms.idfPoisson(3.26, r.random());
-        return (sarrival);
     }
 
 
-    double getServiceCentralino(Rngs r, int streamIndex) {
-        /* ------------------------------
-         * generate the next service time, with rate 1/6
-         * ------------------------------
-         */
-        Rvms rvms = new Rvms();
-        r.selectStream(1 + streamIndex);
-        //return (uniform(2.0, 10.0, r));
-        return rvms.idfLogNormal(CENTRALINO_MU_PARAM_LOGNORMAL, CENTRALINO_SIGMA_PARAM_LOGNORMAL, r.random());
-    }
-
-    double getServiceField(Rngs r, int streamIndex){
-        // Esponenziale
-        r.selectStream(20 + streamIndex);
-        double m = SERVICE_TIME_FIELD;  // 3h = 10800s
-        return (-m * Math.log(1.0 - r.random()));
-    }
-
-    double getServiceRemote(Rngs r, int streamIndex){
-        Rvms rvms = new Rvms();
-        r.selectStream(1 + streamIndex);
-        //return (uniform(2.0, 10.0, r));
-        return rvms.idfLogNormal(REMOTE_MU_PARAM_LOGNORMAL, REMOTE_SIGMA_PARAM_LOGNORMAL, r.random());
-    }
-
-
-    int nextEvent(MsqEvent [] event) {
-        /* ---------------------------------------
-         * return the index of the next event type
-         * ---------------------------------------
-         */
-        int e;
-        int i = 0;
-
-        while (event[i].x == 0)       /* find the index of the first 'active' */
-            i++;                        /* element in the event list            */
-        e = i;
-        while (i < ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE+ALL_EVENTS_FIELD-1) {      //messo +1, ora +3 /* now, check the others to find which  */
-            i++;                        /* event type is most imminent          */
-            if ((event[i].x == 1) && (event[i].t < event[e].t))
-                e = i;
-        }
-        return (e);
-    }
-
-    int findOne(MsqEvent [] event) {
-        /* -----------------------------------------------------
-         * return the index of the available server idle longest
-         * -----------------------------------------------------
-         */
-        int s;
-        int i = 2; //prima era 1
-
-        while (event[i].x == 1 ) {     /* find the index of the first available */
-            //System.out.println(i+" "+event[i].x);
-            i++;    /* (idle) server                         */
-
-        }
-        s = i;
-        while (i < SERVERS+1) {     //aggiunto +1    /* now, check the others to find which   */
-            i++;                        /* has been idle longest                 */
-            if ((event[i].x == 0) && (event[i].t < event[s].t))
-                s = i;
-        }
-        return (s);
-    }
-
-    int findOneRemoto(MsqEvent [] event) {
-        /* -----------------------------------------------------
-         * return the index of the available server idle longest
-         * -----------------------------------------------------
-         */
-        int s;
-        int i = ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+EVENTS_ARRIVE_PRIORITY_CLASS_REMOTE;
-
-        while (event[i].x == 1 ) {     /* find the index of the first available */
-            //System.out.println(i+" "+event[i].x);
-            i++;    /* (idle) server                         */
-
-        }
-        s = i;
-        while (i < ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+EVENTS_ARRIVE_PRIORITY_CLASS_REMOTE+SERVERS_REMOTI-1) {         /* now, check the others to find which   */
-            i++;                        /* has been idle longest                 */
-            if ((event[i].x == 0) && (event[i].t < event[s].t))
-                s = i;
-        }
-        return (s);
-    }
-
-    int findOneFieldStd(MsqEvent [] event) {
-        /* -----------------------------------------------------
-         * return the index of the available server idle longest
-         * -----------------------------------------------------
-         */
-        int s;
-        int i = ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE+EVENTS_ARRIVE_PRIORITY_CLASS_FIELD+SERVERS_FIELD_SPECIAL;
-
-        while (event[i].x == 1 ) {     /* find the index of the first available */
-            //System.out.println(i+" "+event[i].x);
-            i++;    /* (idle) server                         */
-
-        }
-        s = i;
-        while (i < ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE+EVENTS_ARRIVE_PRIORITY_CLASS_FIELD+SERVERS_FIELD_SPECIAL+SERVERS_FIELD_STD -1) {         /* now, check the others to find which   */
-            i++;                        /* has been idle longest                 */
-            if ((event[i].x == 0) && (event[i].t < event[s].t))
-                s = i;
-        }
-        return (s);
-    }
-
-    int findOneFieldSpecial(MsqEvent [] event) {
-        /* -----------------------------------------------------
-         * return the index of the available server idle longest
-         * -----------------------------------------------------
-         */
-        int s;
-        int i = ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE+EVENTS_ARRIVE_PRIORITY_CLASS_FIELD;
-
-        while (event[i].x == 1 ) {     /* find the index of the first available */
-            //System.out.println(i+" "+event[i].x);
-            i++;    /* (idle) server                         */
-
-        }
-        s = i;
-        while (i < ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE+EVENTS_ARRIVE_PRIORITY_CLASS_FIELD+SERVERS_FIELD_SPECIAL+SERVERS_FIELD_STD -1) {         /* now, check the others to find which   */
-            i++;                        /* has been idle longest                 */
-            if ((event[i].x == 0) && (event[i].t < event[s].t))
-                s = i;
-        }
-        return (s);
-    }
-
-    void initFasce(){
-        for(int f = 0; f<31; f++){ //sono 34 fasce orarie da mezz'ora
-            FasciaOraria fo = new FasciaOraria(PERCENTUALI[f], 10958, 0 + 1800*f, 1800*(f+1)-1);
-            fasce.add(fo); //popolo array fasce orarie dinamicamente
-        }
-    }
-
-
-
-
-}

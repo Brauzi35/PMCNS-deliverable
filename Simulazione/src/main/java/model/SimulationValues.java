@@ -7,6 +7,7 @@ public final class SimulationValues {
 
     public static final double START   = 0.0;            /* initial (open the door)        */
     public static final double STOP    = 55800.0;        /* terminal (close the door) time */ //dalle 7 alle 24 in sec 61200.0; 55800 tolte 3 fasce //80000 orizzionte infinito
+    public static final double STOP_BATCH    = 716964.0; /* close the door batch*/
     public static final int    SERVERS = 70;              /* number of servers              */
     public static final int    SERVERS_REMOTI = 56;
     public static final int    SERVERS_FIELD_STD = 250;
