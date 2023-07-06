@@ -62,7 +62,7 @@ public class Estimate {
 	
 	stdev  = Math.sqrt(sum / n);
 	
-	DecimalFormat df = new DecimalFormat("###0.00");
+	DecimalFormat df = new DecimalFormat("######0.00000");
 	
 	if (n > 1) {
 	    u = 1.0 - 0.5 * (1.0 - LOC);              /* interval parameter  */

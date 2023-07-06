@@ -722,6 +722,7 @@ public class Replicazione {
         //System.out.println("\nfor " + index + " jobs the CENTRALINO statistics are:\n");
         //System.out.println("  avg interarrivals .. =   " + f.format(event[0].t / index));
         o.setResponseTimeCentralino(area / index);
+        System.out.println("area/index " + (area / index) + " area is: " + area + " index is: " + index);
         o.setUtilizzazioneCentralino(sumService/tFinalCentralino);
         o.setInterarrivoCentralino(event[0].t / index);
         o.setNumeroCentralino(area / mediaCentralino);
@@ -793,7 +794,7 @@ public class Replicazione {
                 tFinalField = event[s].t;
             }
         }
-        mediaField = mediaField/(SERVERS_FIELD_STD+SERVERS_FIELD_SPECIAL);
+        mediaField = mediaField/(SERVERS_FIELD_STD);//+SERVERS_FIELD_SPECIAL);
 
         double lastArrivalField = 0.0;
         int i = 0;
@@ -815,6 +816,7 @@ public class Replicazione {
         //o.setUtilizzazioneOnField(mediaField/tFinalField);
         o.setInterarrivoOnField((lastArrivalField-444.0) / indexField);
         o.setNumeroOnField(areaField / (tFinalField- 9185));
+        o.setUtilizzazioneOnField(mediaField / tFinalField);
 
         /*for (s = 2; s <= SERVERS+1; s++) {
             area -= sum[s].service;
@@ -905,6 +907,12 @@ public class Replicazione {
         List<Double> interarrivalRemotoList = new ArrayList<>();
         List<Double> interarrivalFieldList = new ArrayList<>();
 
+        List<Double> utilCentralinoList = new ArrayList<>();
+        List<Double> utilDispList = new ArrayList<>();
+        List<Double> utilRemotoList = new ArrayList<>();
+        List<Double> utilFieldList = new ArrayList<>();
+
+
 
 
         for(int i = 0; i<100; i++){
@@ -917,6 +925,11 @@ public class Replicazione {
             interarrivalDispList.add(outputList.get(i).getInterarrivoDispatcher());
             interarrivalRemotoList.add(outputList.get(i).getInterarrivoRemoto());
             interarrivalFieldList.add(outputList.get(i).getInterarrivoOnField());
+
+            utilCentralinoList.add(outputList.get(i).getUtilizzazioneCentralino());
+            utilDispList.add(outputList.get(i).getUtilizzazioneDispatcher());
+            utilRemotoList.add(outputList.get(i).getUtilizzazioneRemoto());
+            utilFieldList.add(outputList.get(i).getUtilizzazioneOnField());
         }
 
         WriteDoubleListToFile wdltf = new WriteDoubleListToFile();
@@ -924,17 +937,23 @@ public class Replicazione {
         wdltf.scrivi(responseTimeDispList, "responseTimeDisp");
         wdltf.scrivi(responseTimeRemotoList, "responseTimeRemoto");
         wdltf.scrivi(responseTimeFieldList, "responseTimeOnField");
+
         wdltf.scrivi(interarrivalCentralinoList, "interarrivoCentralino");
         wdltf.scrivi(interarrivalDispList, "interarrivoDisp");
         wdltf.scrivi(interarrivalRemotoList, "interarrivoRemoto");
         wdltf.scrivi(interarrivalFieldList, "interarrivoOnField");
+
+        wdltf.scrivi(utilCentralinoList, "utilCentralino");
+        wdltf.scrivi(utilDispList, "utilDisp");
+        wdltf.scrivi(utilRemotoList, "utilRemoto");
+        wdltf.scrivi(utilFieldList, "utilOnField");
 
 
 
 
         List<String> names = List.of("responseTimeCentralino", "responseTimeDisp", "responseTimeRemoto"
                 , "responseTimeOnField", "interarrivoCentralino", "interarrivoDisp", "interarrivoRemoto",
-                "interarrivoOnField");
+                "interarrivoOnField", "utilCentralino", "utilDisp", "utilRemoto", "utilOnField");
         Estimate est = new Estimate();
         for(String str : names){
             System.out.println(str);

@@ -282,7 +282,7 @@ class Msq {
                 numberDispatcher--;
                 dispatched++;
                 //System.out.println("entrato in partenze dispatcher");
-                r.selectStream(10);
+                r.selectStream(10 + idx);
                 double rnd = r.random(); //mi dice se il job va on field oppure va remoto
                 double priority = r.random();
                 if(rnd<REMOTE_PROBABILITY){ //in remoto era 0.8
@@ -454,7 +454,7 @@ class Msq {
 
 
                 //feedback remote
-                r.selectStream(18);
+                r.selectStream(18 + idx);
                 double probability = r.random();
                 if(probability<GOBACK_PROBABILITY){ //la riparazione non ha sortito l'effetto desiderato
                     double feedback = r.random();
@@ -622,7 +622,7 @@ class Msq {
 
 
                 //feedback on field
-                r.selectStream(17);
+                r.selectStream(17 + idx);
                 double probability = r.random();
                 if(probability<GOBACK_PROBABILITY){ //la riparazione non ha sortito l'effetto desiderato
                     double feedback = r.random();
@@ -880,7 +880,7 @@ class Msq {
         r.selectStream(1 + streamIndex);
         //double theta = 1/patience;   // tasso di interabbandono
         //System.out.println("Il tasso di abbandono: " + patience);
-        patience = 999999999;
+        //patience = 999999999;
         return (-patience * Math.log(1.0 - r.random()));
     }
 
@@ -894,7 +894,7 @@ class Msq {
 
         Rvms rvms = new Rvms();
 
-        sarrival += rvms.idfPoisson(fasce.get(1).getMediaPoisson(), r.random()); //deve diventare poissoniana
+        sarrival += rvms.idfPoisson(fasce.get(index).getMediaPoisson(), r.random()); //deve diventare poissoniana
         //System.out.println("media poisson:  " + fasce.get(1).getMediaPoisson());
         //sarrival += exponential(2.0, r);
         //sarrival += rvms.idfPoisson(3.26, r.random());
