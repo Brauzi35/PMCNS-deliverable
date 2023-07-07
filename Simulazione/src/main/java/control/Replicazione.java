@@ -768,7 +768,7 @@ public class Replicazione {
         o.setNumeroRemoto(areaRemoto / (tFinalRemoto-timestamp.primoComplRemoto));
 
         /*
-                FIELD *****
+           ****  FIELD *****
          */
         double tFinalField = 0.0;
         double mediaField = 0.0;

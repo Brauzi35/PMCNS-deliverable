@@ -1,6 +1,7 @@
 package control;
 
 import model.FasciaOraria;
+import utils.Estimate;
 import utils.Rngs;
 import utils.Timestamp;
 import utils.WriteDoubleListToFile;
@@ -22,7 +23,30 @@ public class BatchSimulation {
 
 
 
-        List<Double> batchResponseTimeCentralinoList = new ArrayList<>();
+        List<Double> responseTimeCentralinoList = new ArrayList<>();
+        List<Double> responseTimeDispList = new ArrayList<>();
+        List<Double> responseTimeRemotoList = new ArrayList<>();
+        List<Double> responseTimeFieldList = new ArrayList<>();
+
+        List<Double> interarrivalCentralinoList = new ArrayList<>();
+        List<Double> interarrivalDispList = new ArrayList<>();
+        List<Double> interarrivalRemotoList = new ArrayList<>();
+        List<Double> interarrivalFieldList = new ArrayList<>();
+
+        List<Double> utilCentralinoList = new ArrayList<>();
+        List<Double> utilDispList = new ArrayList<>();
+        List<Double> utilRemotoList = new ArrayList<>();
+        List<Double> utilFieldList = new ArrayList<>();
+
+        List<Double> numberJobCentralinoList = new ArrayList<>();
+        List<Double> numberJobDispList = new ArrayList<>();
+        List<Double> numberJobRemotoList = new ArrayList<>();
+        List<Double> numberJobFieldList = new ArrayList<>();
+
+        List<Double> waitingCentralinoList = new ArrayList<>();
+        List<Double> waitingJobDispList = new ArrayList<>();
+        List<Double> waitingJobRemotoList = new ArrayList<>();
+        List<Double> waitingJobFieldList = new ArrayList<>();
 
         long   number = 0;             /* number in the node                 */
         long   numberDispatcher = 0;   /* number in dispathcer               */
@@ -101,6 +125,13 @@ public class BatchSimulation {
         double stopBatch = (1/((STOP_BATCH*perc)/1800))*(Math.pow(2,17));
         System.out.println(stopBatch);
 
+        double sumService = 0.0;
+        double tFinalCentralino = 0.0;
+        double realTimeCentralino = 0.0;
+
+        double tCurrentBatch = 0.0;
+        double eventT = 0.0;
+
 
 //cambiata condizione while
         while ((event[0].x != 0)) {
@@ -109,13 +140,101 @@ public class BatchSimulation {
 
              */
 
-            //System.out.println(t.current);
+            if(index != 0 && index % 512 == 0){
 
-            if(index != 0 && index % 1024 == 0){
+                /*
+                ****** CENTRALINO
+                 */
+                responseTimeCentralinoList.add(area / index);
 
-                batchResponseTimeCentralinoList.add(area / index);
+                sumService = 0.0;
+                for(s = 2; s <= SERVERS+1; s++){
+
+                    sumService += sum[s].service;
+                    sum[s].service=0;
+
+                }
+                sumService = sumService/SERVERS;
+
+                utilCentralinoList.add(sumService/(t.current - tCurrentBatch)) ;
+                interarrivalCentralinoList.add((event[0].t - eventT) / index);
+                numberJobCentralinoList.add(area / (t.current - tCurrentBatch));
+
+                /*
+                for (s = 2; s <= SERVERS+1; s++) {      // adjust area to calculate
+
+                    area -= sum[s].service;
+                    sum[s].service = 0; // averages for the queue
+
+                }
+                waitingCentralinoList.add(area/index);
+                */
+
                 area = 0.0;
                 index = 0;
+
+                /*
+                ***** DISPATCHER
+                * o.setResponseTimeDispatcher(areaDispatcher / dispatched);
+        o.setUtilizzazioneDispatcher(sum[SERVERS+3].service/realTimeDispatcher);
+        o.setInterarrivoDispatcher(realTimeDispatcher / dispatched);
+        o.setNumeroDispatcher(areaDispatcher / realTimeDispatcher);
+                 */
+
+                responseTimeDispList.add(areaDispatcher/dispatched);
+                utilDispList.add(sum[SERVERS+3].service/(t.current - tCurrentBatch));
+                sum[SERVERS+3].service = 0;
+                interarrivalDispList.add((event[0].t - eventT)/dispatched);
+                numberJobDispList.add(areaDispatcher/(t.current - tCurrentBatch));
+
+                areaDispatcher=0;
+                dispatched=0;
+
+                /*
+                *** REMOTO ***
+                 */
+
+                responseTimeRemotoList.add(areaRemoto/indexRemoto);
+
+                double sumRemoto = 0.0;
+                for(s = SERVERS + 7; s < SERVERS+7+SERVERS_REMOTI; s++){
+                    sumRemoto += sum[s].service;
+                    sum[s].service=0;
+
+                }
+                sumRemoto = sumRemoto/SERVERS_REMOTI;
+
+                utilRemotoList.add(sumRemoto/(t.current - tCurrentBatch));
+                interarrivalRemotoList.add((event[0].t - eventT)/indexRemoto);
+                numberJobRemotoList.add(areaRemoto/(t.current - tCurrentBatch));
+
+                areaRemoto = 0;
+                indexRemoto = 0;
+
+                /*
+                *** FIELD ***
+                 */
+                responseTimeFieldList.add(areaField/indexField);
+
+                double sumField = 0.0;
+                for(s = ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + ALL_EVENTS_REMOTE + EVENTS_ARRIVE_PRIORITY_CLASS_FIELD; s < ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + ALL_EVENTS_REMOTE + EVENTS_ARRIVE_PRIORITY_CLASS_FIELD + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD; s++){
+                    sumField += sum[s].service;
+                    sum[s].service=0;
+                }
+                sumField = sumField/(SERVERS_FIELD_STD);//+SERVERS_FIELD_SPECIAL);
+
+                utilFieldList.add(sumField/(t.current - tCurrentBatch));
+                interarrivalFieldList.add((event[0].t - eventT)/indexField);
+                numberJobFieldList.add(areaField/(t.current - tCurrentBatch));
+
+                areaField = 0;
+                indexField = 0;
+
+                /*
+                FINAL
+                 */
+                tCurrentBatch = t.current;
+                eventT = event[0].t;
             }
 
             if(field < 0){
@@ -174,7 +293,6 @@ public class BatchSimulation {
             else{
                 event[ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE+EVENTS_ARRIVE_PRIORITY_CLASS_FIELD+SERVERS_FIELD_SPECIAL+SERVERS_FIELD_STD].x = 0;
             }
-
 
 
             e         = m.nextEvent(event);                /* next event index */
@@ -710,7 +828,34 @@ public class BatchSimulation {
         }
 
         WriteDoubleListToFile w = new WriteDoubleListToFile();
-        w.scrivi(batchResponseTimeCentralinoList, "batchResponseTimeCent");
+        //CENTRALINO
+        w.scrivi(responseTimeCentralinoList, "batchResponseTimeCent");
+        w.scrivi(utilCentralinoList, "batchUtilCent");
+        w.scrivi(interarrivalCentralinoList, "batchInterCent");
+        w.scrivi(numberJobCentralinoList, "batchNumberJobCent");
+        //w.scrivi(waitingCentralinoList, "batchWaitingCent");
+
+        //DISPATCHER
+        w.scrivi(responseTimeDispList, "batchResponseTimeDisp");
+        w.scrivi(utilDispList, "batchUtilDisp");
+        w.scrivi(interarrivalDispList, "batchInterDisp");
+        w.scrivi(numberJobDispList, "batchNumberJobDisp");
+        //w.scrivi(waitingDispList, "batchWaitingDisp");
+
+        //REMOTO
+        w.scrivi(responseTimeRemotoList, "batchResponseTimeRemoto");
+        w.scrivi(utilRemotoList, "batchUtilRemoto");
+        w.scrivi(interarrivalRemotoList, "batchInterRemoto");
+        w.scrivi(numberJobRemotoList, "batchNumberJobRemoto");
+
+        //FIELD
+        w.scrivi(responseTimeFieldList, "batchResponseTimeField");
+        w.scrivi(utilFieldList, "batchUtilField");
+        w.scrivi(interarrivalFieldList, "batchInterField");
+        w.scrivi(numberJobFieldList, "batchNumberJobField");
+
+
+        Estimate est = new Estimate();
 
 
 
@@ -721,7 +866,7 @@ public class BatchSimulation {
           ****      ALCUNE STATISTICHE SONO FAKE *****
          */
 
-        double tFinalCentralino = 0.0;
+        //double tFinalCentralino = 0.0;
         double mediaCentralino = 0.0;
         for(s = 2; s <= SERVERS+1; s++){
             mediaCentralino += event[s].t;
@@ -731,14 +876,22 @@ public class BatchSimulation {
         }
         mediaCentralino = mediaCentralino/SERVERS;
 
-        double realTimeCentralino = tFinalCentralino - timestamp.primoComplCentralino;
+
+        for(s = 2; s <= SERVERS+1; s++){
+
+            sumService += sum[s].service;
+
+        }
+        sumService = sumService/SERVERS;
+
+        realTimeCentralino = tFinalCentralino - timestamp.primoComplCentralino;
         System.out.println("primo compl " + timestamp.primoComplCentralino);
 
         System.out.println("\nfor " + index + " jobs the CENTRALINO statistics are:\n");
         System.out.println("  avg interarrivals .. =   " + f.format(event[0].t / index));
         System.out.println("  avg wait (response time) ........... =   " + f.format(area / index));
         System.out.println("  avg # in centralino ...... =   " + f.format(area / realTimeCentralino));
-        System.out.println("  media " + realTimeCentralino);
+        System.out.println("  real time " + realTimeCentralino);
 
         for (s = 2; s <= SERVERS+1; s++) {      /* adjust area to calculate */
             area -= sum[s].service;              /* averages for the queue   */
