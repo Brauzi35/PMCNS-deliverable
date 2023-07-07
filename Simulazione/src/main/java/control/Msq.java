@@ -4,6 +4,8 @@ import model.FasciaOraria;
 import org.apache.commons.math3.analysis.differentiation.FiniteDifferencesDifferentiator;
 import utils.Rngs;
 import utils.Rvms;
+import utils.Timestamp;
+
 import static model.SimulationValues.*;
 
 import java.lang.*;
@@ -29,16 +31,11 @@ class MsqEvent{                     /* the next-event list    */
 }
 
 
-class Msq {
 
+class Msq {
 
     double sarrival = START;
     static List<FasciaOraria> fasce = new ArrayList<>();
-
-
-
-
-
 
 
     public static void main(String[] args) {
@@ -114,40 +111,11 @@ class Msq {
             sum[s].served  = 0;
         }
 
+        Timestamp timestamp = new Timestamp(); //classe che tiene i valori del primo e ultimo completamento per ogni centro
 
 //cambiata condizione while
         while ((event[0].x != 0) || (number + numberDispatcher + remoto + field != 0)) {
 
-            if(remoto > SERVERS_REMOTI) {
-                //System.out.println("remoto ha superato 54! " + remoto);
-            }
-
-            //System.out.println("number is "+number);
-            /*System.out.println("stato server con number a: " + number + " e dispatcher number a: " + numberDispatcher +
-                    " remoto a: " + remoto + " on field a: " + field);
-            //System.out.println("abbandoni: "+abandons);
-            System.out.println("abbandoni alta remote: "+abandonsRH);
-            System.out.println("abbandoni media remote: "+abandonsRM);
-            System.out.println("abbandoni bassa remote: "+abandonsRL);
-            System.out.println("abbandoni alta field: "+abandonsFH);
-            System.out.println("abbandoni media field: "+abandonsFM);
-            System.out.println("abbandoni bassa field: "+abandonsFL);
-
-            for(int i = 2; i<ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER; i++) {
-
-                System.out.println(i+ " - " +event[i].x + " time: " + event[i].t);
-            }
-
-
-            for(int i = ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+EVENTS_ARRIVE_PRIORITY_CLASS_REMOTE; i<ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+EVENTS_ARRIVE_PRIORITY_CLASS_REMOTE+SERVERS_REMOTI; i++) {
-
-                System.out.println(i+ " - " +event[i].x + " time: " + event[i].t);
-            }
-
-            for(int i = ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE+EVENTS_ARRIVE_PRIORITY_CLASS_FIELD; i<ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE+EVENTS_ARRIVE_PRIORITY_CLASS_FIELD+SERVERS_FIELD_STD+SERVERS_FIELD_SPECIAL ; i++) {
-
-                System.out.println(i+ " - " +event[i].x + " time: " + event[i].t);
-            }*/
 
             if(field < 0){
                 break;
@@ -279,6 +247,11 @@ class Msq {
             }
 
             else if(e == ALL_EVENTS_CENTRALINO+EVENT_ARRIVE_DISPATCHER){//departure dispatcher
+
+                if(timestamp.primoComplDisp == 0){
+                    timestamp.primoComplCentralino = t.current;
+                }
+
                 numberDispatcher--;
                 dispatched++;
                 //System.out.println("entrato in partenze dispatcher");
@@ -304,6 +277,11 @@ class Msq {
                 }
                 else{//on field
                     //System.out.println("entrato ramo on field");
+
+                    if(timestamp.primoArrivoField == 0){
+                        timestamp.primoArrivoField = t.current;
+                    }
+
                     if(priority < HIGH_PRIORITY_PROBABILITY){ //alta priorità
                         event[ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + ALL_EVENTS_REMOTE + 2].x = 1;
                         event[ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + ALL_EVENTS_REMOTE + 2].t = t.current;
@@ -448,10 +426,14 @@ class Msq {
 
             else if(e >= ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+EVENTS_ARRIVE_PRIORITY_CLASS_REMOTE && e < ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+EVENTS_ARRIVE_PRIORITY_CLASS_REMOTE+SERVERS_REMOTI){//completamento server remoto
                 //System.out.println("entrato in completamento server remoto");
+
+                if(timestamp.primoComplRemoto == 0){
+                    timestamp.primoComplRemoto = t.current;
+                }
+
                 indexRemoto++;
                 remoto--;
                 s = e;
-
 
                 //feedback remote
                 r.selectStream(18 + idx);
@@ -615,9 +597,14 @@ class Msq {
 
             else if(e >= ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE+EVENTS_ARRIVE_PRIORITY_CLASS_FIELD && e < ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE+EVENTS_ARRIVE_PRIORITY_CLASS_FIELD+SERVERS_FIELD_STD+SERVERS_FIELD_SPECIAL){//completamento server on field
                 //System.out.println("entrato in completamento server on field");
+
+
+                if(timestamp.primoComplField == 0){
+                    timestamp.primoComplField = t.current;
+                }
+
                 indexField++;
                 field--;
-                //System.out.println("ho decrementato field a: " + field);
                 s = e;
 
 
@@ -687,6 +674,10 @@ class Msq {
 
             else {                                         /* process a callcenter departure */
                 //System.out.println("entrato in departures");
+
+                if (timestamp.primoComplCentralino == 0){
+                    timestamp.primoComplCentralino = t.current;
+                }
                 index++;                                     /* from server s       */
                 number--;
                 s                 = e; //indice next event = server id
@@ -728,16 +719,22 @@ class Msq {
         }
         mediaCentralino = mediaCentralino/SERVERS;
 
+        System.out.println(mediaCentralino + " media centralino ");
+
+        double realTimeCentralino = tFinalCentralino - timestamp.primoComplCentralino;
+
+        System.out.println(realTimeCentralino + " real time centralino");
+
         System.out.println("\nfor " + index + " jobs the CENTRALINO statistics are:\n");
         System.out.println("  avg interarrivals .. =   " + f.format(event[0].t / index));
         System.out.println("  avg wait (response time) ........... =   " + f.format(area / index));
-        System.out.println("  avg # in centralino ...... =   " + f.format(area / mediaCentralino));
+        System.out.println("  avg # in centralino ...... =   " + f.format(area / realTimeCentralino)); // diviso ultimo - primo
 
         for (s = 2; s <= SERVERS+1; s++) {      /* adjust area to calculate */
             area -= sum[s].service;              /* averages for the queue   */
         }
 
-        double realTimeDispatcher = event[2+SERVERS+1].t-398.80;
+        double realTimeDispatcher = event[2+SERVERS+1].t-timestamp.primoComplDisp; //ultimo - primo completamento dispatcher
         System.out.println("Real time dispatcher: " + realTimeDispatcher);
 
 
@@ -765,12 +762,12 @@ class Msq {
             }
         }
         mediaRemoto = mediaRemoto/SERVERS_REMOTI;
-        System.out.println("cercami: " + tFinalRemoto);
+
         System.out.println("\nfor " + indexRemoto + " jobs the REMOTO statistics are:\n");
-        System.out.println("  avg interarrivals .. =   " + f.format((lastArrivalRemoto-398) / indexRemoto));
+        System.out.println("  avg interarrivals .. =   " + f.format((lastArrivalRemoto-timestamp.primoComplDisp) / indexRemoto));
         System.out.println("  avg wait (service time) ........... =   " + f.format(areaRemoto / indexRemoto));
-        System.out.println("  avg # in node ...... =   " + f.format(areaRemoto / (tFinalRemoto-398-525)));
-        System.out.println("area remoto queue= " + areaRemotoQueue + " acchittamento: " + f.format(areaRemotoQueue /  (tFinalRemoto-398-525)));
+        System.out.println("  avg # in node ...... =   " + f.format(areaRemoto / (tFinalRemoto-timestamp.primoComplRemoto)));
+        System.out.println("area remoto queue= " + areaRemotoQueue + " acchittamento: " + f.format(areaRemotoQueue /  (tFinalRemoto-timestamp.primoComplRemoto)));
 
 
         double tFinalField = 0.0;
@@ -793,9 +790,9 @@ class Msq {
         }
 
         System.out.println("\nfor " + indexField + " jobs the FIELD statistics are:\n");
-        System.out.println("  avg interarrivals .. =   " + f.format((lastArrivalField - 444.0) / indexField));
+        System.out.println("  avg interarrivals .. =   " + f.format((lastArrivalField - timestamp.primoArrivoField) / indexField));
         System.out.println("  avg wait ........... =   " + f.format((areaField) / indexField));
-        System.out.println("  avg # in node ...... =   " + f.format(areaField / (tFinalField - 9185))); //9185 primo cmple
+        System.out.println("  avg # in node ...... =   " + f.format(areaField / (tFinalField - timestamp.primoComplField))); //9185 primo cmple
 
         System.out.println("area remoto queue= " + areaFieldQueue + " acchittamento: " + f.format(areaFieldQueue /  (tFinalField - 9185)));
 
@@ -896,8 +893,8 @@ class Msq {
 
         Rvms rvms = new Rvms();
 
-        sarrival += rvms.idfPoisson(fasce.get(index).getMediaPoisson(), r.random()); //deve diventare poissoniana
-        //System.out.println("media poisson:  " + fasce.get(1).getMediaPoisson());
+        sarrival += rvms.idfPoisson(fasce.get(3).getMediaPoisson(), r.random()); //deve diventare poissoniana
+        //System.out.println("media poisson:  " + fasce.get(index).getMediaPoisson());
         //sarrival += exponential(2.0, r);
         //sarrival += rvms.idfPoisson(3.26, r.random());
         return (sarrival);

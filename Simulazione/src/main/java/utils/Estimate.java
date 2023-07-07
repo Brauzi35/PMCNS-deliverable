@@ -20,7 +20,7 @@ import java.util.StringTokenizer;
 
 public class Estimate {
     
-    static final double LOC = 0.99;    /* level of confidence,        */
+    static final double LOC = 0.95;    /* level of confidence,        */
                                        /* use 0.95 for 95% confidence */
 
     public static void main(String[] args) throws FileNotFoundException {
