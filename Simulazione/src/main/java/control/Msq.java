@@ -879,8 +879,8 @@ class Msq {
         //double theta = 1/patience;   // tasso di interabbandono
         //System.out.println("Il tasso di abbandono: " + patience);
         //patience = 999999999;
-        //return (-patience * Math.log(1.0 - r.random()));
-        return 999999999;
+        return (-patience * Math.log(1.0 - r.random()));
+        //return 999999999;
     }
 
     double getArrival(Rngs r, double currentTime, int streamIndex) {
@@ -893,7 +893,7 @@ class Msq {
 
         Rvms rvms = new Rvms();
 
-        sarrival += rvms.idfPoisson(fasce.get(1).getMediaPoisson(), r.random()); //deve diventare poissoniana
+        sarrival += rvms.idfPoisson(fasce.get(2).getMediaPoisson(), r.random()); //deve diventare poissoniana
         //System.out.println("media poisson:  " + fasce.get(index).getMediaPoisson());
         //sarrival += exponential(2.0, r);
         //sarrival += rvms.idfPoisson(3.26, r.random());

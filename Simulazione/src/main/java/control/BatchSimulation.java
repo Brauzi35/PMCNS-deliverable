@@ -6,6 +6,7 @@ import utils.Rngs;
 import utils.Timestamp;
 import utils.WriteDoubleListToFile;
 
+import java.io.FileNotFoundException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -17,9 +18,9 @@ import static model.SimulationValues.SERVERS;
 public class BatchSimulation {
 
     static List<FasciaOraria> fasce = new ArrayList<>();
-    static double PERC = 0.02; //perc èla percentuale di chiamate in quella fascia oraria--- 0.02 fascia idx 1 ---- 0.03 fascia idx 2
+    static double PERC = 0.03; //perc èla percentuale di chiamate in quella fascia oraria--- 0.02 fascia idx 1 ---- 0.03 fascia idx 2
 
-    public void batchSim(double perc){
+    public void batchSim(double perc) throws FileNotFoundException {
 
 
 
@@ -856,6 +857,16 @@ public class BatchSimulation {
 
 
         Estimate est = new Estimate();
+        List<String> names = List.of("batchResponseTimeCent", "BatchResponseTimeDisp", "BatchResponseTimeRemoto"
+                , "batchResponseTimeField", "batchInterCent", "batchInterDisp", "batchInterRemoto",
+                "batchInterField", "batchUtilCent", "batchUtilDisp", "batchUtilRemoto", "batchUtilField", "batchNumberJobCent",
+                "batchNumberJobDisp", "batchNumberJobRemoto", "batchNumberJobField" );
+
+        for(String str : names){
+            System.out.println(str);
+            est.intervals(str);
+            System.out.println("\n------------------------------\n");
+        }
 
 
 
@@ -983,41 +994,10 @@ public class BatchSimulation {
         System.out.println("    server     utilization     avg service      share");
         //il tempo dell'ultima uscita da un centralino
 
-        /*for (s = 2; s <= SERVERS+1; s++) {
-            //System.out.println(s +" "+sum[s].service + " " +t.current);
-            System.out.print("       " + s + "          " + g.format(sum[s].service / tFinalCentralino) + "            ");
-            System.out.println(f.format(sum[s].service / sum[s].served) + "         " + g.format(sum[s].served / (double)index));
-        }
-        int disp = 2+SERVERS +1;
-        double temp = event[disp].t-391.0; //perché devo togliere il tempo del primo arrivo al dispatcher
-        System.out.print("       " + disp + "          " + g.format(sum[2+SERVERS +1].service / temp) + "            ");
-        System.out.println(f.format(sum[2+SERVERS +1].service / sum[2+SERVERS +1].served) + "         " + g.format(sum[2+SERVERS +1].served / (double)dispatched));
 
-
-
-        for (s = SERVERS + 7; s < SERVERS+7+SERVERS_REMOTI; s++) {
-            //System.out.println(s +" "+sum[s].service + " " +t.current);
-            System.out.print("       " + s + "          " + g.format(sum[s].service / tFinalRemoto) + "            ");
-            System.out.println(f.format(sum[s].service / sum[s].served) + "         " + g.format(sum[s].served / (double)indexRemoto));
-        }
-
-        for (s =2 + SERVERS + 2 + 3 + SERVERS_REMOTI + 3 + 3; s< 2 + SERVERS + 2 + 3 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL; s++){
-            System.out.print("       " + s + "          " + g.format(sum[s].service / t.current) + "            ");
-            System.out.println(f.format(sum[s].service / sum[s].served) + "         " + g.format(sum[s].served / (double)indexField));
-        }
-
-        for (s =2 + SERVERS + 2 + 3 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL; s< 2 + SERVERS + 2 + 3 + SERVERS_REMOTI + 3 + 3 + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD; s++){
-            System.out.print("       " + s + "          " + g.format(sum[s].service / t.current) + "            ");
-            System.out.println(f.format(sum[s].service / sum[s].served) + "         " + g.format(sum[s].served / (double)indexField));
-        }
-
-
-        System.out.println("media poisson:  " + fasce.get(1).getMediaPoisson());
-
-        System.out.println(""); */
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws FileNotFoundException {
 
         BatchSimulation bs = new BatchSimulation();
         bs.batchSim(PERC);
