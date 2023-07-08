@@ -5,6 +5,7 @@ import org.apache.commons.math3.analysis.differentiation.FiniteDifferencesDiffer
 import utils.Rngs;
 import utils.Rvms;
 import utils.Timestamp;
+import utils.WriteDoubleListToFile;
 
 import static model.SimulationValues.*;
 
@@ -37,8 +38,19 @@ class Msq {
     double sarrival = START;
     static List<FasciaOraria> fasce = new ArrayList<>();
 
+    static List<Double> visiteCentralino = new ArrayList<>();
+    static List<Integer> visiteDispatcher = new ArrayList<>();
+    static List<Integer> visiteRemoto = new ArrayList<>();
+    static List<Integer> visiteOnField = new ArrayList<>();
+
+
+
+
+
 
     public static void main(String[] args) {
+
+
 
         long   number = 0;             /* number in the node                 */
         long   numberDispatcher = 0;   /* number in dispathcer               */
@@ -86,6 +98,7 @@ class Msq {
         List<Double> abandonsFL = new ArrayList<Double>(); //lista abbandoni on field low priority
 
 
+
         for(int f = 0; f<31; f++){ //sono 34 fasce orarie da mezz'ora
             FasciaOraria fo = new FasciaOraria(PERCENTUALI[f], 10958, 0 + 1800*f, 1800*(f+1)-1);
             fasce.add(fo); //popolo array fasce orarie dinamicamente
@@ -117,9 +130,7 @@ class Msq {
         while ((event[0].x != 0) || (number + numberDispatcher + remoto + field != 0)) {
 
 
-            if(field < 0){
-                break;
-            }
+            visiteCentralino.add(area/index);
             //sarebbe meglio farlo dentro gli arrivi //todo
             if(!abandons.isEmpty()){
 
@@ -638,12 +649,12 @@ class Msq {
                 if(s>= 2 + SERVERS + 2 + 3 + 3 + SERVERS_REMOTI + 3 && s<  2 + SERVERS + 2 + 3 + 3 + SERVERS_REMOTI + 3 + SERVERS_FIELD_SPECIAL && !abandonsFH.isEmpty()){
                     //if(!abandonsFH.isEmpty()){
 
-                        abandonsFH.remove(0); //prendo un job dalla coda ad alta priorità
-                        service         = m.getServiceField(r, idx);
-                        sum[s].service += service;
-                        sum[s].served++;
-                        event[s].t      = t.current + service;
-                   // }
+                    abandonsFH.remove(0); //prendo un job dalla coda ad alta priorità
+                    service         = m.getServiceField(r, idx);
+                    sum[s].service += service;
+                    sum[s].served++;
+                    event[s].t      = t.current + service;
+                    // }
                 }
 
 
@@ -803,6 +814,11 @@ class Msq {
             areaField -= sum[s].service;
         }
 
+        WriteDoubleListToFile writeDoubleListToFile = new WriteDoubleListToFile();
+        writeDoubleListToFile.scrivi(visiteCentralino, "tempiRispostaPerFascia");
+
+        GraphController.createGraph("tempiRispostaPerFascia");
+
 
         System.out.println("  \navg # queue dispatcher: " + sum[SERVERS + 3].service/realTimeDispatcher);
         System.out.println("  area disp: " + areaDispatcher);
@@ -881,6 +897,7 @@ class Msq {
         //patience = 999999999;
         return (-patience * Math.log(1.0 - r.random()));
         //return 999999999;
+        //return 20;
     }
 
     double getArrival(Rngs r, double currentTime, int streamIndex) {
@@ -893,7 +910,7 @@ class Msq {
 
         Rvms rvms = new Rvms();
 
-        sarrival += rvms.idfPoisson(fasce.get(2).getMediaPoisson(), r.random()); //deve diventare poissoniana
+        sarrival += rvms.idfPoisson(fasce.get(1).getMediaPoisson(), r.random()); //deve diventare poissoniana
         //System.out.println("media poisson:  " + fasce.get(index).getMediaPoisson());
         //sarrival += exponential(2.0, r);
         //sarrival += rvms.idfPoisson(3.26, r.random());

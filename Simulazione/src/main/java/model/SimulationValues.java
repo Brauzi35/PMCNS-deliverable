@@ -13,8 +13,7 @@ public final class SimulationValues {
     public static final int    SERVERS_FIELD_STD = 250;
     public static final int    SERVERS_FIELD_SPECIAL = 5;
     public static final int    DISPATCHER_SERVICE_TIME = 5;
-    public static final double [] PERCENTUALI = {0.001,    0.02,    0.03,    0.04,    0.0470,    0.049,    0.049,    0.048,    0.046,    0.042,    0.038,    0.0350,    0.0350,    0.037,    0.036,    0.035,    0.036,    0.037,    0.039,    0.04,    0.041,    0.041,    0.039,    0.034,    0.027,    0.018,    0.017,    0.015,    0.011,    0.006,    0.003};
-
+    public static final double [] PERCENTUALI = {0.001,    0.02,    0.03,    0.04,    0.047,    0.049,    0.049,    0.0485,    0.0465,    0.0425,    0.0385,    0.0355,    0.0355,    0.0375,    0.0365,    0.0355,    0.0365,    0.0375,    0.0395,    0.04,    0.041,    0.041,    0.0395,    0.0345,    0.0275,    0.0185,    0.017,    0.015,    0.011,    0.006,    0.003};
 
     public static final double REMOTE_PROBABILITY = 0.8;
     public static final double HIGH_PRIORITY_PROBABILITY = 0.0095;

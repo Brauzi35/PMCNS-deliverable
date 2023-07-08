@@ -18,7 +18,7 @@ import static model.SimulationValues.SERVERS;
 public class BatchSimulation {
 
     static List<FasciaOraria> fasce = new ArrayList<>();
-    static double PERC = 0.03; //perc èla percentuale di chiamate in quella fascia oraria--- 0.02 fascia idx 1 ---- 0.03 fascia idx 2
+    static double PERC = 0.02; //perc è la percentuale di chiamate in quella fascia oraria--- 0.02 fascia idx 1 ---- 0.03 fascia idx 2
 
     public void batchSim(double perc) throws FileNotFoundException {
 
@@ -133,7 +133,7 @@ public class BatchSimulation {
         double tCurrentBatch = 0.0;
         double eventT = 0.0;
 
-
+        int count = 0;
 //cambiata condizione while
         while ((event[0].x != 0)) {
 
@@ -141,8 +141,10 @@ public class BatchSimulation {
 
              */
 
-            if(index != 0 && index % 512 == 0){
+            if(index != 0 && index % 1024 == 0){
+                count++;
 
+                System.out.println("index: " + index + "  " + count);
                 /*
                 ****** CENTRALINO
                  */
@@ -176,10 +178,7 @@ public class BatchSimulation {
 
                 /*
                 ***** DISPATCHER
-                * o.setResponseTimeDispatcher(areaDispatcher / dispatched);
-        o.setUtilizzazioneDispatcher(sum[SERVERS+3].service/realTimeDispatcher);
-        o.setInterarrivoDispatcher(realTimeDispatcher / dispatched);
-        o.setNumeroDispatcher(areaDispatcher / realTimeDispatcher);
+
                  */
 
                 responseTimeDispList.add(areaDispatcher/dispatched);
@@ -320,7 +319,8 @@ public class BatchSimulation {
                 //System.out.println("entrato in arrivals callcenter");
                 number++;
                 event[0].t        = m.getArrival(r, t.current, idx);
-                if (event[0].t > stopBatch) {
+                //if (event[0].t > stopBatch) {
+                if(count == 132){
                     event[0].x = 0; //close the door
                 }
                 if (number <= SERVERS) {
