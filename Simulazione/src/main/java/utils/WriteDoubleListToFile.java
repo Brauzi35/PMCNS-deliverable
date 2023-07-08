@@ -14,7 +14,7 @@ public class WriteDoubleListToFile {
             PrintWriter printWriter = new PrintWriter(fileWriter);
 
             for (double num : doubleList) {
-                if(!Double.isNaN(num)) {
+                if(!Double.isNaN(num) && !(Double.isInfinite(num))) {
                     printWriter.println(num);
 
                 }

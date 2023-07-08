@@ -53,18 +53,18 @@ public class GraphController {
         xAxis.setTickUnit(new NumberTickUnit(displayInterval)); // Imposta l'unità di tick sull'asse X
         plot.setDomainAxis(xAxis);
         ValueAxis yAxis = plot.getRangeAxis();
-        yAxis.setRange(385, 406); // Imposta il range dell'asse Y da 0 a 5
+        yAxis.setRange(350, 600); // Imposta il range dell'asse Y da 0 a 5
 
 
         //FINE FUNZIONA
 
 
-        ChartFrame frame = new ChartFrame("Tempo di risposta 8:00 - 8:30", chart);
+        ChartFrame frame = new ChartFrame("Tempo di risposta 17:00 - 17:30", chart);
         frame.pack();
         frame.setVisible(true);
 
         try {
-            File outputFile = new File("grafico.png");
+            File outputFile = new File("graficoBatchResponseTimeCent17:00_17:30_80Server.png");
             ChartUtils.saveChartAsPNG(outputFile, chart, 800, 600);
             System.out.println("Grafico esportato come immagine PNG");
         } catch (IOException e) {
@@ -82,7 +82,7 @@ public class GraphController {
 
     private static JFreeChart createChart(XYDataset dataset) {
         JFreeChart chart = ChartFactory.createXYLineChart(
-                "Tempo di risposta 8:00 - 8:30", // Titolo del grafico
+                "Tempo di risposta 17:00 - 17:30", // Titolo del grafico
                 "# job", // Etichetta asse X
                 "Tempo di risposta", // Etichetta asse Y
                 dataset, // Dataset dei dati
@@ -104,25 +104,9 @@ public class GraphController {
         plot.setBackgroundPaint(customColor); //COLORE CELESTE TRASPARENZA
 
 
-
-        /*try {
-            File outputFile = new File("grafico.png");
-            ChartUtils.saveChartAsPNG(outputFile, chart, 800, 600);
-            System.out.println("Grafico esportato come immagine PNG");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }*/
         return chart;
     }
 
-    // Classe per l'unità di tick personalizzata
-    /*private static String[] createXLabels(int dataSize, int displayInterval) {
-        String[] labels = new String[dataSize];
-        for (int i = 0; i < dataSize; i++) {
-            labels[i] = String.valueOf(i * 2048);
-        }
-        return labels;
-    }*/
 
     private static String[] createXLabels(int dataSize, int displayInterval) {
         int numLabels = dataSize / displayInterval;

@@ -18,7 +18,7 @@ import static model.SimulationValues.SERVERS;
 public class BatchSimulation {
 
     static List<FasciaOraria> fasce = new ArrayList<>();
-    static double PERC = 0.02; //perc è la percentuale di chiamate in quella fascia oraria--- 0.02 fascia idx 1 ---- 0.03 fascia idx 2
+    static double PERC = 0.041; //perc è la percentuale di chiamate in quella fascia oraria--- 0.02 fascia idx 1 ---- 0.03 fascia idx 2
 
     public void batchSim(double perc) throws FileNotFoundException {
 

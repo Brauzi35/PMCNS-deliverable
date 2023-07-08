@@ -39,18 +39,14 @@ class Msq {
     static List<FasciaOraria> fasce = new ArrayList<>();
 
     static List<Double> visiteCentralino = new ArrayList<>();
+    static List<Double> utilCentralino = new ArrayList<>();
     static List<Integer> visiteDispatcher = new ArrayList<>();
     static List<Integer> visiteRemoto = new ArrayList<>();
     static List<Integer> visiteOnField = new ArrayList<>();
 
 
 
-
-
-
     public static void main(String[] args) {
-
-
 
         long   number = 0;             /* number in the node                 */
         long   numberDispatcher = 0;   /* number in dispathcer               */
@@ -128,6 +124,7 @@ class Msq {
 
 //cambiata condizione while
         while ((event[0].x != 0) || (number + numberDispatcher + remoto + field != 0)) {
+
 
 
             visiteCentralino.add(area/index);
@@ -260,7 +257,7 @@ class Msq {
             else if(e == ALL_EVENTS_CENTRALINO+EVENT_ARRIVE_DISPATCHER){//departure dispatcher
 
                 if(timestamp.primoComplDisp == 0){
-                    timestamp.primoComplCentralino = t.current;
+                    timestamp.primoComplDisp = t.current;
                 }
 
                 numberDispatcher--;
@@ -344,7 +341,6 @@ class Msq {
                     event[s].t = t.current + service;
                     event[s].x = 1; //elegibile come next event
 
-
                 }
                 else{
                     //genero abbandono se un job sta in coda
@@ -365,7 +361,7 @@ class Msq {
                     //processiamo i servizi
                     service = m.getServiceRemote(r, idx); //cambiare!
                     s = m.findOneRemoto(event);
-                    //System.out.println("s is: " + s);
+
                     sum[s].service +=service;
                     sum[s].served++;
                     event[s].t = t.current + service;
@@ -689,6 +685,7 @@ class Msq {
                 if (timestamp.primoComplCentralino == 0){
                     timestamp.primoComplCentralino = t.current;
                 }
+                System.out.println(t.current + " " + index);
                 index++;                                     /* from server s       */
                 number--;
                 s                 = e; //indice next event = server id
@@ -814,11 +811,13 @@ class Msq {
             areaField -= sum[s].service;
         }
 
-        WriteDoubleListToFile writeDoubleListToFile = new WriteDoubleListToFile();
+        /*WriteDoubleListToFile writeDoubleListToFile = new WriteDoubleListToFile();
         writeDoubleListToFile.scrivi(visiteCentralino, "tempiRispostaPerFascia");
+        writeDoubleListToFile.scrivi(utilCentralino, "utilCentralinoTotal");
 
-        GraphController.createGraph("tempiRispostaPerFascia");
-
+        GraphControllerMsq.createGraph(("tempiRispostaPerFascia"));
+        //GraphControllerMsq.createGraph("utilCentralinoTotal");
+*/
 
         System.out.println("  \navg # queue dispatcher: " + sum[SERVERS + 3].service/realTimeDispatcher);
         System.out.println("  area disp: " + areaDispatcher);
@@ -891,13 +890,11 @@ class Msq {
     }
 
     double getAbandon(double patience, Rngs r, int streamIndex){
+
         r.selectStream(1 + streamIndex);
-        //double theta = 1/patience;   // tasso di interabbandono
-        //System.out.println("Il tasso di abbandono: " + patience);
         //patience = 999999999;
-        return (-patience * Math.log(1.0 - r.random()));
-        //return 999999999;
-        //return 20;
+        return (-patience * Math.log(1.0 - r.random())); //ok abbandoni reali
+        //return 999999999; no abbandoni
     }
 
     double getArrival(Rngs r, double currentTime, int streamIndex) {
@@ -910,7 +907,7 @@ class Msq {
 
         Rvms rvms = new Rvms();
 
-        sarrival += rvms.idfPoisson(fasce.get(1).getMediaPoisson(), r.random()); //deve diventare poissoniana
+        sarrival += rvms.idfPoisson(fasce.get(index).getMediaPoisson(), r.random()); //deve diventare poissoniana
         //System.out.println("media poisson:  " + fasce.get(index).getMediaPoisson());
         //sarrival += exponential(2.0, r);
         //sarrival += rvms.idfPoisson(3.26, r.random());

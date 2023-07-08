@@ -41,7 +41,7 @@ public class GraphControllerMsq {
         JFreeChart chart = createChart(dataset);
         XYPlot plot = (XYPlot) chart.getPlot();
         ValueAxis yAxis = plot.getRangeAxis();
-        yAxis.setRange(200, 1000); // Imposta il range dell'asse Y da 0 a 5
+        yAxis.setRange(250, 1300); // Imposta il range dell'asse Y da 0 a 5
 
         // Crea una finestra per visualizzare il grafico
         ChartFrame frame = new ChartFrame("Grafico tempi di risposta", chart);
@@ -81,7 +81,7 @@ public class GraphControllerMsq {
         plot.setBackgroundPaint(customColor);
 
         try {
-            File outputFile = new File("grafico.png");
+            File outputFile = new File("graficoAVGcentralino.png");
             ChartUtils.saveChartAsPNG(outputFile, chart, 800, 600);
             System.out.println("Grafico esportato come immagine PNG");
         } catch (IOException e) {
@@ -108,7 +108,7 @@ public class GraphControllerMsq {
 
     public static void main(String[] args) {
         // Esempio di utilizzo
-        String filePath = "batchResponseTimeCent"; // Path del file contenente i dati
+        String filePath = "averagesRespCentralino"; // Path del file contenente i dati
         createGraph(filePath);
     }
 

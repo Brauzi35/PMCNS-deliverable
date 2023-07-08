@@ -23,6 +23,9 @@ public class Replicazione {
 
     static List<Outputs> outputList = new ArrayList<>();
 
+    static List<List<Double>> responseTimeCentralino = new ArrayList<>();
+
+
     /*
         *** ORIZZONTE FINITO
         * INDEX nelle fasce ok
@@ -30,6 +33,8 @@ public class Replicazione {
      */
 
     void simulation(int streamIndex){
+
+        List<Double> respList = new ArrayList<>();
         Outputs o = new Outputs();
 
         long   number = 0;             /* number in the node                 */
@@ -106,7 +111,7 @@ public class Replicazione {
 //cambiata condizione while
         while ((event[0].x != 0) || (number + numberDispatcher + remoto + field != 0)) {
 
-
+            respList.add(area/index);
 
             if(field < 0){
                 System.out.println("field < 0");
@@ -693,6 +698,8 @@ public class Replicazione {
             //System.out.println("FINE ITERAZIONE\n\n");
         }
 
+        responseTimeCentralino.add(respList);
+
         DecimalFormat f = new DecimalFormat("###0.00");
         DecimalFormat g = new DecimalFormat("###0.000");
 
@@ -879,7 +886,13 @@ public class Replicazione {
 
         }
 
+
+        List<Double> averagesRespCentralino = calculateIndexAverages(responseTimeCentralino);
+
         WriteDoubleListToFile wdltf = new WriteDoubleListToFile();
+
+        wdltf.scrivi(averagesRespCentralino, "averagesRespCentralino");
+
         wdltf.scrivi(responseTimeCentralinoList, "responseTimeCentralino");
         wdltf.scrivi(responseTimeDispList, "responseTimeDisp");
         wdltf.scrivi(responseTimeRemotoList, "responseTimeRemoto");
@@ -921,5 +934,36 @@ public class Replicazione {
             System.out.println("\n------------------------------\n");
         }
 
+    }
+
+    public static List<Double> calculateIndexAverages(List<List<Double>> dataList) {
+        List<Double> averages = new ArrayList<>();
+
+        if (dataList.isEmpty()) {
+            return averages;
+        }
+
+        int numColumns = dataList.get(0).size();
+
+        for (int columnIndex = 0; columnIndex < numColumns; columnIndex++) {
+            double sum = 0.0;
+            int count = 0;
+
+            for (List<Double> row : dataList) {
+                if (columnIndex < row.size()) {
+                    sum += row.get(columnIndex);
+                    count++;
+                }
+            }
+
+            if (count > 0) {
+                double average = sum / count;
+                averages.add(average);
+            } else {
+                averages.add(0.0); // Se la lista ha una dimensione inferiore, considera il valore come zero
+            }
+        }
+
+        return averages;
     }
 }
