@@ -45,16 +45,16 @@ public class GraphController {
         xAxis.setTickUnit(new NumberTickUnit(displayInterval)); // Imposta l'unità di tick sull'asse X
         plot.setDomainAxis(xAxis);
         ValueAxis yAxis = plot.getRangeAxis();
-        yAxis.setRange(350, 600); // Imposta il range dell'asse Y da val1 a val2
+        yAxis.setRange(370, 415); // Imposta il range dell'asse Y da val1 a val2
 
 
 
-        ChartFrame frame = new ChartFrame("Tempo di risposta 17:00 - 17:30", chart);
+        ChartFrame frame = new ChartFrame("Tempo di risposta 8:00 - 8:30", chart);
         frame.pack();
         frame.setVisible(true);
 
         try {   //stampa su file .png
-            File outputFile = new File("graficoBatchResponseTimeCent17:00_17:30_80Server.png");
+            File outputFile = new File("graficoBatchResponseTimeCent8:00_8:30_80Server.png");
             ChartUtils.saveChartAsPNG(outputFile, chart, 800, 600);
             System.out.println("Grafico esportato come immagine PNG");
         } catch (IOException e) {
@@ -72,7 +72,7 @@ public class GraphController {
 
     private static JFreeChart createChart(XYDataset dataset) {
         JFreeChart chart = ChartFactory.createXYLineChart(
-                "Tempo di risposta 17:00 - 17:30", // Titolo del grafico
+                "Tempo di risposta 8 - 8:30 ", // Titolo del grafico
                 "# job", // Etichetta asse X
                 "Tempo di risposta", // Etichetta asse Y
                 dataset, // Dataset dei dati

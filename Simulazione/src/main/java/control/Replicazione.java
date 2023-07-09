@@ -779,6 +779,7 @@ public class Replicazione {
 
         for(int i = 0; i<1024; i++){
 
+            System.out.println("eseguendo iterazione i = " + i);
             Replicazione rep = new Replicazione();
             rep.simulation(i);
         }
@@ -807,8 +808,6 @@ public class Replicazione {
         List<Double> waitingJobDispList = new ArrayList<>();
         List<Double> waitingJobRemotoList = new ArrayList<>();
         List<Double> waitingJobFieldList = new ArrayList<>();
-
-
 
 
         for(int i = 0; i<1024; i++){

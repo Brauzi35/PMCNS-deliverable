@@ -789,9 +789,9 @@ class Msq {
         System.out.println("  abandons in RL........... =   " + abandonRL);
         System.out.println("  il dispathcer ha servito ticket =   " + dispatched + " per un tempo" +
                 " totale di: " + sum[SERVERS + 3].service);
-        System.out.println("\nthe server statistics are:\n");
+        /*System.out.println("\nthe server statistics are:\n");
         System.out.println("    server     utilization     avg service      share");
-
+        */
 
         /*for (s = 2; s <= SERVERS+1; s++) {
             //System.out.println(s +" "+sum[s].service + " " +t.current);
@@ -843,7 +843,7 @@ class Msq {
 
         Rvms rvms = new Rvms();
         //index per tutte le fasce, altrimenti sostituisci l'indice della singola fascia
-        sarrival += rvms.idfPoisson(fasce.get(index).getMediaPoisson(), r.random());
+        sarrival += rvms.idfPoisson(fasce.get(1).getMediaPoisson(), r.random());
         return (sarrival);
     }
 
@@ -869,7 +869,12 @@ class Msq {
         //servizio del centro on field --> lognormale
         Rvms rvms = new Rvms();
         r.selectStream(1 + streamIndex);
-        return rvms.idfLogNormal(REMOTE_MU_PARAM_LOGNORMAL, REMOTE_SIGMA_PARAM_LOGNORMAL, r.random());
+        double rd = r.random();
+        if(rd > 0.990){
+            rd = 0.990;
+        }
+        return rvms.idfLogNormal(REMOTE_MU_PARAM_LOGNORMAL, REMOTE_SIGMA_PARAM_LOGNORMAL, rd);
+
     }
 
 
