@@ -77,7 +77,6 @@ public class GraphControllerMsq {
         Color customColor = new Color(red, green, blue, 130);
         plot.getRenderer().setSeriesPaint(0, Color.RED);
 
-        //XYPlot plot = (XYPlot) chart.getPlot();
         plot.setBackgroundPaint(customColor);
 
         try {
@@ -107,7 +106,7 @@ public class GraphControllerMsq {
     }
 
     public static void main(String[] args) {
-        // Esempio di utilizzo
+
         String filePath = "averagesRespCentralino"; // Path del file contenente i dati
         createGraph(filePath);
     }

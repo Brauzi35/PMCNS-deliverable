@@ -650,7 +650,6 @@ class Msq {
                 if (timestamp.primoComplCentralino == 0){
                     timestamp.primoComplCentralino = t.current;
                 }
-                System.out.println(t.current + " " + index);
                 index++;                                     /* from server s       */
                 number--;
                 s                 = e; //indice next event = server id

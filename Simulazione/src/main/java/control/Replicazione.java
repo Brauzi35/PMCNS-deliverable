@@ -81,7 +81,7 @@ public class Replicazione {
         List<Double> abandonsFL = new ArrayList<Double>(); //lista abbandoni on field low priority
 
 
-        for(int f = 0; f<31; f++){ //sono 34 fasce orarie da mezz'ora
+        for(int f = 0; f<31; f++){ //sono 31 fasce orarie da mezz'ora
             FasciaOraria fo = new FasciaOraria(PERCENTUALI[f], 10958, 0 + 1800*f, 1800*(f+1)-1);
             fasce.add(fo); //popolo array fasce orarie dinamicamente
         }
@@ -108,16 +108,18 @@ public class Replicazione {
 
         Timestamp timestamp = new Timestamp(); //classe che tiene i valori del primo e ultimo completamento per ogni centro
 
-//cambiata condizione while
         while ((event[0].x != 0) || (number + numberDispatcher + remoto + field != 0)) {
 
-            respList.add(area/index);
+            respList.add(area/index); /*salva tutti i valori di response time
+                                        volta per volta in una lista che poi andrà
+                                        in una lista di liste per effettuare la media
+                                       */
 
             if(field < 0){
                 System.out.println("field < 0");
                 break;
             }
-            //sarebbe meglio farlo dentro gli arrivi //todo
+
             if(!abandons.isEmpty()){
 
                 event[1].t = abandons.get(abandons.indexOf(Collections.min(abandons)));
@@ -178,7 +180,6 @@ public class Replicazione {
             area     += (t.next - t.current) * number;     /* update integral  */
             areaDispatcher += (t.next - t.current) * numberDispatcher;
 
-            //System.out.println("Area dispatcher: " + areaDispatcher + " con tnext: " + t.next + " e tcurr: " + t.current);
             areaRemoto += (t.next - t.current) * remoto;
             if(remoto > SERVERS_REMOTI){
                 areaRemotoQueue += (t.next - t.current) * (remoto - SERVERS_REMOTI);
@@ -189,12 +190,8 @@ public class Replicazione {
             }
             t.current = t.next;                            /* advance the clock*/
 
-            //System.out.println("t current is: "+t.current);
-
-
 
             if (e == EVENT_ARRIVE_CENTRALINO-1) {                                  /* process a callcenter arrival*/
-                //System.out.println("entrato in arrivals callcenter");
                 number++;
                 event[0].t        = m.getArrival(r, t.current, streamIndex);
                 if (event[0].t > STOP)
@@ -202,7 +199,6 @@ public class Replicazione {
                 if (number <= SERVERS) {
                     service         = m.getServiceCentralino(r, streamIndex);
                     s               = m.findOne(event); //id server
-                    //System.out.println("s is " + s);
                     sum[s].service += service;
                     sum[s].served++;
                     event[s].t      = t.current + service; //tempo di completamento
@@ -210,15 +206,12 @@ public class Replicazione {
                 }
                 if (number > SERVERS){
                     //genero abbandono se un job sta in coda
-                    //System.out.println("arrivo di un job messo in coda e numero di job nel nodo = " + number);
                     double at = m.getAbandon(PATIENCE_CENTRALINO, r, streamIndex) + t.current;
                     abandons.add(at);
                 }
             }
 
             else if(e == EVENT_ABANDONMENT_CENTRALINO) { //processo abbandono callcenter
-                //index++;
-                //System.out.println("entrato in abandons");
                 number--;
                 abandon++;
                 abandons.remove(abandons.indexOf(Collections.min(abandons))); //tolgo job dalla lista
@@ -228,10 +221,9 @@ public class Replicazione {
             }
 
             else if(e == ALL_EVENTS_CENTRALINO){ //arrivo dispatcher
-                //numberDispatcher++; //incremento contatore
-                //System.out.println("entrato in arrivo dispatcher");
+
                 event[ALL_EVENTS_CENTRALINO].x = 0; //non può esserci un altro arrivo al dispatcher senza che ci
-                //sia un' altra partenza dal centralino
+                                                    //sia un' altra partenza dal centralino
                 //se number dispatcher è >= 1 dopo l'incremento, vuol dire che ho il server idle
                 if (numberDispatcher == 1) {
                     //e quindi faccio il servizio = spawn evento completamento dispatcher
@@ -251,12 +243,10 @@ public class Replicazione {
 
                 numberDispatcher--;
                 dispatched++;
-                //System.out.println("entrato in partenze dispatcher");
                 r.selectStream(10 + streamIndex);
-                double rnd = r.random(); //mi dice se il job va on field oppure va remoto
+                double rnd = r.random();                                //mi dice se il job va on field oppure va remoto
                 double priority = r.random();
-                if(rnd<REMOTE_PROBABILITY){ //in remoto era 0.8
-                    //System.out.println("entrato ramo remoto");
+                if(rnd<REMOTE_PROBABILITY){                                     //in remoto è 0.8
                     if(priority < HIGH_PRIORITY_PROBABILITY){ //alta priorità
                         event[ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + 2].x = 1;
                         event[ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + 2].t = t.current;
@@ -273,7 +263,6 @@ public class Replicazione {
                     remoto++;
                 }
                 else{//on field
-                    //System.out.println("entrato ramo on field");
 
                     if(timestamp.primoArrivoField == 0){
                         timestamp.primoArrivoField = t.current;
@@ -293,7 +282,6 @@ public class Replicazione {
                         event[ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + ALL_EVENTS_REMOTE].t = t.current;
                     }
                     field++;
-                    //System.out.println("ho incrementato field a: " + field);
                 }
 
 
@@ -315,16 +303,14 @@ public class Replicazione {
             }
 
             else if(e == ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER){ //arrivo coda priorità bassa - remoto
-                //remoto++;
-                //System.out.println("entrato in arrivo coda bassa priorità");
+
                 event[ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER].x = 0; //non può esserci un altro arrivo in questa coda senza che ci
-                //sia un' altra partenza dal dispatcher
+                                                                            //sia un' altra partenza dal dispatcher
 
                 if(remoto <= SERVERS_REMOTI && abandonsRH.isEmpty() && abandonsRM.isEmpty()){
                     //processiamo i servizi
                     service = m.getServiceRemote(r, streamIndex); //cambiare!
                     s = m.findOneRemoto(event);
-                    //System.out.println("s is: " + s);
                     sum[s].service +=service;
                     sum[s].served++;
                     event[s].t = t.current + service;
@@ -334,7 +320,6 @@ public class Replicazione {
                 }
                 else{
                     //genero abbandono se un job sta in coda
-                    //System.out.println("genero abbandono bassa");
                     double at = m.getAbandon(PATIENCE_LOW_REMOTO, r, streamIndex) + t.current;
                     abandonsRL.add(at);
                 }
@@ -342,16 +327,14 @@ public class Replicazione {
             }
 
             else if(e == ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+1){ //arrivo coda priorità media - remoto
-                //remoto++;
-                //System.out.println("entrato in arrivo coda media priorità");
+
                 event[ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+1].x = 0; //non può esserci un altro arrivo in questa coda senza che ci
-                //sia un' altra partenza dal dispatcher
+                                                                            //sia un' altra partenza dal dispatcher
 
                 if(remoto <= SERVERS_REMOTI && abandonsRH.isEmpty()){
                     //processiamo i servizi
                     service = m.getServiceRemote(r, streamIndex); //cambiare!
                     s = m.findOneRemoto(event);
-                    //System.out.println("s is: " + s);
                     sum[s].service +=service;
                     sum[s].served++;
                     event[s].t = t.current + service;
@@ -360,7 +343,6 @@ public class Replicazione {
                 }
                 else{
                     //genero abbandono se un job sta in coda
-                    //System.out.println("genero abbandono media");
                     double at = m.getAbandon(PATIENCE_MEDIUM_REMOTO, r, streamIndex) + t.current;
                     abandonsRM.add(at);
                 }
@@ -368,14 +350,12 @@ public class Replicazione {
             }
 
             else if(e == ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+2){ //arrivo coda priorità alta - remoto
-                //remoto++;
-                //System.out.println("entrato in arrivo coda alta priorità");
                 event[ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+2].x = 0; //non può esserci un altro arrivo in questa coda senza che ci
-                //sia un' altra partenza dal dispatcher
+                                                                            //sia un' altra partenza dal dispatcher
 
                 if(remoto <= SERVERS_REMOTI){
                     //processiamo i servizi
-                    service = m.getServiceRemote(r, streamIndex); //cambiare!
+                    service = m.getServiceRemote(r, streamIndex);
                     s = m.findOneRemoto(event);
                     sum[s].service +=service;
                     sum[s].served++;
@@ -384,7 +364,6 @@ public class Replicazione {
 
                 }
                 if(remoto > SERVERS_REMOTI){
-                    //System.out.println("genero abbandono alta");
                     double at = m.getAbandon(PATIENCE_HIGH_REMOTO, r, streamIndex) + t.current;
                     abandonsRH.add(at);
                 }
@@ -392,7 +371,6 @@ public class Replicazione {
             }
 
             else if(e == ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + EVENTS_ARRIVE_PRIORITY_CLASS_REMOTE + SERVERS_REMOTI){ //abbandono coda alta priorità remoto
-                //System.out.println("entrato in abbandono coda alta priorità");
                 remoto--;
                 abandonRH++;
                 abandonsRH.remove(abandonsRH.indexOf(Collections.min(abandonsRH))); //tolgo job dalla lista
@@ -402,7 +380,6 @@ public class Replicazione {
             }
 
             else if(e == ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + EVENTS_ARRIVE_PRIORITY_CLASS_REMOTE + SERVERS_REMOTI + 1){ //abbandono coda media priorità remoto
-                //System.out.println("entrato in abbandono coda media priorità");
                 remoto--;
                 abandonRM++;
                 abandonsRM.remove(abandonsRM.indexOf(Collections.min(abandonsRM))); //tolgo job dalla lista
@@ -412,7 +389,6 @@ public class Replicazione {
             }
 
             else if(e == ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + EVENTS_ARRIVE_PRIORITY_CLASS_REMOTE + SERVERS_REMOTI + 2){ //abbandono coda bassa priorità remoto
-                //System.out.println("entrato in abbandono coda bassa priorità");
                 remoto--;
                 abandonRL++;
                 abandonsRL.remove(abandonsRL.indexOf(Collections.min(abandonsRL))); //tolgo job dalla lista
@@ -422,7 +398,6 @@ public class Replicazione {
             }
 
             else if(e >= ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+EVENTS_ARRIVE_PRIORITY_CLASS_REMOTE && e < ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+EVENTS_ARRIVE_PRIORITY_CLASS_REMOTE+SERVERS_REMOTI){//completamento server remoto
-                //System.out.println("entrato in completamento server remoto");
 
                 if(timestamp.primoComplRemoto == 0){
                     timestamp.primoComplRemoto = t.current;
@@ -482,15 +457,13 @@ public class Replicazione {
             }
 
             else if(e == ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE){ //arrivo coda priorità bassa - on field
-                //System.out.println("entrato in arrivo coda bassa priorità on field");
                 event[ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE].x = 0; //non può esserci un altro arrivo in questa coda senza che ci
-                //sia un' altra partenza dal dispatcher
+                                                                                            //sia un' altra partenza dal dispatcher
 
                 if(field <= SERVERS_FIELD_STD && abandonsFH.isEmpty() && abandonsFM.isEmpty()){ //la coda di priorità bassa vede solo i server standard
-                    //processiamo i servizi
-                    service = m.getServiceField(r, streamIndex); //cambiare!
+                                                                                                //processiamo i servizi
+                    service = m.getServiceField(r, streamIndex);
                     s = m.findOneFieldStd(event);
-                    //System.out.println("s is: " + s);
                     sum[s].service +=service;
                     sum[s].served++;
                     event[s].t = t.current + service;
@@ -500,7 +473,6 @@ public class Replicazione {
                 }
                 else{
                     //genero abbandono se un job sta in coda
-                    //System.out.println("genero abbandono bassa");
                     double at = m.getAbandon(PATIENCE_LOW_FIELD, r, streamIndex) + t.current;
                     abandonsFL.add(at);
                 }
@@ -508,15 +480,13 @@ public class Replicazione {
             }
 
             else if(e == ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE + 1){ //arrivo coda priorità media - on field
-                //System.out.println("entrato in arrivo coda bassa priorità on field");
                 event[ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE + 1].x = 0; //non può esserci un altro arrivo in questa coda senza che ci
-                //sia un' altra partenza dal dispatcher
+                                                                                                //sia un' altra partenza dal dispatcher
 
                 if(field <= SERVERS_FIELD_STD && abandonsFH.isEmpty()){ //la coda di priorità media vede solo i server standard
                     //processiamo i servizi
                     service = m.getServiceField(r, streamIndex); //cambiare!
                     s = m.findOneFieldStd(event);
-                    //System.out.println("s is: " + s);
                     sum[s].service +=service;
                     sum[s].served++;
                     event[s].t = t.current + service;
@@ -526,7 +496,6 @@ public class Replicazione {
                 }
                 else{
                     //genero abbandono se un job sta in coda
-                    //System.out.println("genero abbandono bassa");
                     double at = m.getAbandon(PATIENCE_MEDIUM_FIELD, r, streamIndex) + t.current;
                     abandonsFM.add(at);
                 }
@@ -534,15 +503,13 @@ public class Replicazione {
             }
 
             else if(e == ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE + 2){ //arrivo coda priorità alta - on field
-                //System.out.println("entrato in arrivo coda bassa priorità on field");
                 event[ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE + 2].x = 0; //non può esserci un altro arrivo in questa coda senza che ci
-                //sia un' altra partenza dal dispatcher
+                                                                                                    //sia un' altra partenza dal dispatcher
 
                 if(field <= SERVERS_FIELD_STD + SERVERS_FIELD_SPECIAL){ //la coda di priorità alta vede i server standard + quelli dedicati
                     //processiamo i servizi
                     service = m.getServiceField(r, streamIndex); //cambiare!
                     s = m.findOneFieldSpecial(event);
-                    //System.out.println("s is: " + s);
                     sum[s].service +=service;
                     sum[s].served++;
                     event[s].t = t.current + service;
@@ -552,7 +519,6 @@ public class Replicazione {
                 }
                 else{
                     //genero abbandono se un job sta in coda
-                    //System.out.println("genero abbandono bassa");
                     double at = m.getAbandon(PATIENCE_HIGH_FIELD, r, streamIndex) + t.current;
                     abandonsFH.add(at);
                 }
@@ -560,9 +526,7 @@ public class Replicazione {
             }
 
             else if(e == ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE+EVENTS_ARRIVE_PRIORITY_CLASS_FIELD+SERVERS_FIELD_SPECIAL+SERVERS_FIELD_STD){ //abbandono coda bassa priorità field
-                //System.out.println("entrato in abbandono coda bassa priorità field");
                 field--;
-                //System.out.println("ho decrementato field a: " + field);
                 abandonFL++;
                 abandonsFL.remove(abandonsFL.indexOf(Collections.min(abandonsFL))); //tolgo job dalla lista
                 if(abandonsFL.isEmpty()){
@@ -571,9 +535,7 @@ public class Replicazione {
             }
 
             else if(e == ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE+EVENTS_ARRIVE_PRIORITY_CLASS_FIELD+SERVERS_FIELD_SPECIAL+SERVERS_FIELD_STD + 1){ //abbandono coda media priorità field
-                //System.out.println("entrato in abbandono coda media priorità field");
                 field--;
-                //System.out.println("ho decrementato field a: " + field);
                 abandonFM++;
                 abandonsFM.remove(abandonsFM.indexOf(Collections.min(abandonsFM))); //tolgo job dalla lista
                 if(abandonsFM.isEmpty()){
@@ -582,9 +544,7 @@ public class Replicazione {
             }
 
             else if(e == ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE+EVENTS_ARRIVE_PRIORITY_CLASS_FIELD+SERVERS_FIELD_SPECIAL+SERVERS_FIELD_STD + 2){ //abbandono coda alta priorità field
-                //System.out.println("entrato in abbandono coda alta priorità field");
                 field--;
-                //System.out.println("ho decrementato field a: " + field);
                 abandonFH++;
                 abandonsFH.remove(abandonsFH.indexOf(Collections.min(abandonsFH))); //tolgo job dalla lista
                 if(abandonsFH.isEmpty()){
@@ -593,7 +553,6 @@ public class Replicazione {
             }
 
             else if(e >= ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE+EVENTS_ARRIVE_PRIORITY_CLASS_FIELD && e < ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE+EVENTS_ARRIVE_PRIORITY_CLASS_FIELD+SERVERS_FIELD_STD+SERVERS_FIELD_SPECIAL){//completamento server on field
-                //System.out.println("entrato in completamento server on field");
 
                 if(timestamp.primoComplField == 0){
                     timestamp.primoComplField = t.current;
@@ -632,14 +591,12 @@ public class Replicazione {
 
                 //servizio se c'è coda - comportamento server speciali
                 if(s>= 2 + SERVERS + 2 + 3 + 3 + SERVERS_REMOTI + 3 && s<  2 + SERVERS + 2 + 3 + 3 + SERVERS_REMOTI + 3 + SERVERS_FIELD_SPECIAL && !abandonsFH.isEmpty()){
-                    //if(!abandonsFH.isEmpty()){
 
                     abandonsFH.remove(0); //prendo un job dalla coda ad alta priorità
                     service         = m.getServiceField(r, streamIndex);
                     sum[s].service += service;
                     sum[s].served++;
                     event[s].t      = t.current + service;
-                    // }
                 }
 
 
@@ -669,7 +626,6 @@ public class Replicazione {
 
 
             else {                                         /* process a callcenter departure */
-                //System.out.println("entrato in departures");
 
                 if (timestamp.primoComplCentralino == 0){
                     timestamp.primoComplCentralino = t.current;
@@ -677,7 +633,7 @@ public class Replicazione {
 
                 index++;                                     /* from server s       */
                 number--;
-                s                 = e; //indice next event = server id
+                s                 = e;                      //indice next event = server id
                 event[ALL_EVENTS_CENTRALINO].t = t.current; //invio ticket al dispatcher
                 event[ALL_EVENTS_CENTRALINO].x = 1; //arrivo dispatcher elegibile per next event
                 numberDispatcher++; //incremento contatore
@@ -695,7 +651,6 @@ public class Replicazione {
                     event[s].x = 0;
                 }
             }
-            //System.out.println("FINE ITERAZIONE\n\n");
         }
 
         responseTimeCentralino.add(respList);
@@ -801,15 +756,13 @@ public class Replicazione {
         o.setNumeroOnField(areaField / (tFinalField - timestamp.primoComplField));
         o.setUtilizzazioneOnField(mediaField / tFinalField);
 
-        /*for (s = 2; s <= SERVERS+1; s++) {
-            area -= sum[s].service;
-        }*/
+
         for (s = ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + ALL_EVENTS_REMOTE + EVENTS_ARRIVE_PRIORITY_CLASS_FIELD; s < ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + ALL_EVENTS_REMOTE + EVENTS_ARRIVE_PRIORITY_CLASS_FIELD + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD; s++) {
             areaField -= sum[s].service;
         }
 
         /*
-                WAITING TIME *****
+               *** WAITING TIME *****
          */
         o.setWaitingTimeCentralino((area / index));
         o.setWaitingTimeDispatcher(areaDispatcher / dispatched);
@@ -919,8 +872,6 @@ public class Replicazione {
         wdltf.scrivi(waitingJobFieldList, "waitingJobOnField");
 
 
-        //tempo attesa ok , tempo risposta ok , utilizzazione ok, numero job sist ok, interarrivo ok
-
         List<String> names = List.of("responseTimeCentralino", "responseTimeDisp", "responseTimeRemoto"
                 , "responseTimeOnField", "interarrivoCentralino", "interarrivoDisp", "interarrivoRemoto",
                 "interarrivoOnField", "utilCentralino", "utilDisp", "utilRemoto", "utilOnField", "numberJobCentralino",
@@ -937,6 +888,13 @@ public class Replicazione {
     }
 
     public static List<Double> calculateIndexAverages(List<List<Double>> dataList) {
+
+        /*
+         * data una lista di liste, calcola la media
+         * dei valori allo stesso indice di ogni lista
+         * e restituisce la lista delle medie
+         */
+
         List<Double> averages = new ArrayList<>();
 
         if (dataList.isEmpty()) {

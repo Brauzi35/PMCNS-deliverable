@@ -852,7 +852,7 @@ class ModelloMigliorativo {
         WriteDoubleListToFile writeDoubleListToFile = new WriteDoubleListToFile();
         writeDoubleListToFile.scrivi(visiteCentralino, "tempiRispostaPerFascia");
 
-        GraphController.createGraph("tempiRispostaPerFascia");
+        //GraphController.createGraph("tempiRispostaPerFascia");
 
 
         System.out.println("  \navg # queue dispatcher: " + sum[SERVERS + 3].service/realTimeDispatcher);
