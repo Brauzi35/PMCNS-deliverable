@@ -24,9 +24,6 @@ public class GraphController {
 
         List<Double> responseTimes = readDataFromFile(filePath);
         int displayInterval = 4;
-        int numDataPoints = responseTimes.size();
-        int numDisplayedPoints = numDataPoints / displayInterval;
-
 
         double[] xData = new double[responseTimes.size()];
         double[] yData = new double[responseTimes.size()];
@@ -41,11 +38,6 @@ public class GraphController {
         //  dataset per il grafico
         XYDataset dataset = createDataset(xData, yData);
 
-        // Crea il grafico
-
-
-
-// FUNZIONA
         JFreeChart chart = createChart(dataset);
         XYPlot plot = (XYPlot) chart.getPlot();
         String[] xLabels = createXLabels(responseTimes.size(), displayInterval);
@@ -53,17 +45,15 @@ public class GraphController {
         xAxis.setTickUnit(new NumberTickUnit(displayInterval)); // Imposta l'unità di tick sull'asse X
         plot.setDomainAxis(xAxis);
         ValueAxis yAxis = plot.getRangeAxis();
-        yAxis.setRange(350, 600); // Imposta il range dell'asse Y da 0 a 5
+        yAxis.setRange(350, 600); // Imposta il range dell'asse Y da val1 a val2
 
-
-        //FINE FUNZIONA
 
 
         ChartFrame frame = new ChartFrame("Tempo di risposta 17:00 - 17:30", chart);
         frame.pack();
         frame.setVisible(true);
 
-        try {
+        try {   //stampa su file .png
             File outputFile = new File("graficoBatchResponseTimeCent17:00_17:30_80Server.png");
             ChartUtils.saveChartAsPNG(outputFile, chart, 800, 600);
             System.out.println("Grafico esportato come immagine PNG");
@@ -97,12 +87,10 @@ public class GraphController {
         int blue = 255;
 
         // Crea il colore personalizzato utilizzando i valori RGB
-        Color customColor = new Color(red, green, blue, 130);
+        Color customColor = new Color(red, green, blue, 130); //130 = valore per trasparenza
         plot.getRenderer().setSeriesPaint(0, Color.RED);
 
-        //XYPlot plot = (XYPlot) chart.getPlot();
-        plot.setBackgroundPaint(customColor); //COLORE CELESTE TRASPARENZA
-
+        plot.setBackgroundPaint(customColor); //COLORE SFONDO CELESTE con TRASPARENZA
 
         return chart;
     }
@@ -113,7 +101,7 @@ public class GraphController {
         String[] labels = new String[numLabels];
 
         for (int i = 0; i < numLabels; i++) {
-            int labelValue = i * 4096;//  /*displayInterval*/ *4096;
+            int labelValue = i * 4096;//
             labels[i] = String.valueOf(labelValue);
         }
 

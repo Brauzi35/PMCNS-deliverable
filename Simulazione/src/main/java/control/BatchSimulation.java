@@ -18,11 +18,9 @@ import static model.SimulationValues.SERVERS;
 public class BatchSimulation {
 
     static List<FasciaOraria> fasce = new ArrayList<>();
-    static double PERC = 0.041; //perc è la percentuale di chiamate in quella fascia oraria--- 0.02 fascia idx 1 ---- 0.03 fascia idx 2
+    static double PERC = 0.041; //perc è la percentuale di chiamate in quella fascia oraria--- 0.02 fascia idx 1 ---- 0.03 fascia idx 2 --- 0.041 fascia idx 20
 
     public void batchSim(double perc) throws FileNotFoundException {
-
-
 
         List<Double> responseTimeCentralinoList = new ArrayList<>();
         List<Double> responseTimeDispList = new ArrayList<>();
@@ -44,10 +42,6 @@ public class BatchSimulation {
         List<Double> numberJobRemotoList = new ArrayList<>();
         List<Double> numberJobFieldList = new ArrayList<>();
 
-        List<Double> waitingCentralinoList = new ArrayList<>();
-        List<Double> waitingJobDispList = new ArrayList<>();
-        List<Double> waitingJobRemotoList = new ArrayList<>();
-        List<Double> waitingJobFieldList = new ArrayList<>();
 
         long   number = 0;             /* number in the node                 */
         long   numberDispatcher = 0;   /* number in dispathcer               */
@@ -96,7 +90,7 @@ public class BatchSimulation {
         List<Double> abandonsFL = new ArrayList<Double>(); //lista abbandoni on field low priority
 
 
-        for(int f = 0; f<31; f++){ //sono 34 fasce orarie da mezz'ora
+        for(int f = 0; f<31; f++){ //sono 31 fasce orarie da mezz'ora
             FasciaOraria fo = new FasciaOraria(PERCENTUALI[f], 10958, 0 + 1800*f, 1800*(f+1)-1);
             fasce.add(fo); //popolo array fasce orarie dinamicamente
         }
@@ -134,17 +128,17 @@ public class BatchSimulation {
         double eventT = 0.0;
 
         int count = 0;
-//cambiata condizione while
+
         while ((event[0].x != 0)) {
 
             /*
-
+                    Entro nell'if ogni 1024 iterazioni (dimensione batch 2^10),
+                    salvo i valori nelle liste appropiate e poi azzero le statistiche
              */
 
             if(index != 0 && index % 1024 == 0){
                 count++;
 
-                System.out.println("index: " + index + "  " + count);
                 /*
                 ****** CENTRALINO
                  */
@@ -163,15 +157,6 @@ public class BatchSimulation {
                 interarrivalCentralinoList.add((event[0].t - eventT) / index);
                 numberJobCentralinoList.add(area / (t.current - tCurrentBatch));
 
-                /*
-                for (s = 2; s <= SERVERS+1; s++) {      // adjust area to calculate
-
-                    area -= sum[s].service;
-                    sum[s].service = 0; // averages for the queue
-
-                }
-                waitingCentralinoList.add(area/index);
-                */
 
                 area = 0.0;
                 index = 0;
@@ -221,7 +206,7 @@ public class BatchSimulation {
                     sumField += sum[s].service;
                     sum[s].service=0;
                 }
-                sumField = sumField/(SERVERS_FIELD_STD);//+SERVERS_FIELD_SPECIAL);
+                sumField = sumField/(SERVERS_FIELD_STD);
 
                 utilFieldList.add(sumField/(t.current - tCurrentBatch));
                 interarrivalFieldList.add((event[0].t - eventT)/indexField);
@@ -240,7 +225,7 @@ public class BatchSimulation {
             if(field < 0){
                 break;
             }
-            //sarebbe meglio farlo dentro gli arrivi //todo
+
             if(!abandons.isEmpty()){
 
                 event[1].t = abandons.get(abandons.indexOf(Collections.min(abandons)));
@@ -300,7 +285,6 @@ public class BatchSimulation {
             area     += (t.next - t.current) * number;     /* update integral  */
             areaDispatcher += (t.next - t.current) * numberDispatcher;
 
-            //System.out.println("Area dispatcher: " + areaDispatcher + " con tnext: " + t.next + " e tcurr: " + t.current);
             areaRemoto += (t.next - t.current) * remoto;
             if(remoto > SERVERS_REMOTI){
                 areaRemotoQueue += (t.next - t.current) * (remoto - SERVERS_REMOTI);
@@ -311,22 +295,19 @@ public class BatchSimulation {
             }
             t.current = t.next;                            /* advance the clock*/
 
-            //System.out.println("t current is: "+t.current);
 
 
 
             if (e == EVENT_ARRIVE_CENTRALINO-1) {                                  /* process a callcenter arrival*/
-                //System.out.println("entrato in arrivals callcenter");
                 number++;
                 event[0].t        = m.getArrival(r, t.current, idx);
-                //if (event[0].t > stopBatch) {
+
                 if(count == 132){
                     event[0].x = 0; //close the door
                 }
                 if (number <= SERVERS) {
                     service         = m.getServiceCentralino(r, idx);
                     s               = m.findOne(event); //id server
-                    //System.out.println("s is " + s);
                     sum[s].service += service;
                     sum[s].served++;
                     event[s].t      = t.current + service; //tempo di completamento
@@ -334,15 +315,12 @@ public class BatchSimulation {
                 }
                 if (number > SERVERS){
                     //genero abbandono se un job sta in coda
-                    //System.out.println("arrivo di un job messo in coda e numero di job nel nodo = " + number);
                     double at = m.getAbandon(PATIENCE_CENTRALINO, r, idx) + t.current;
                     abandons.add(at);
                 }
             }
 
             else if(e == EVENT_ABANDONMENT_CENTRALINO) { //processo abbandono callcenter
-                //index++;
-                //System.out.println("entrato in abandons");
                 number--;
                 abandon++;
                 abandons.remove(abandons.indexOf(Collections.min(abandons))); //tolgo job dalla lista
@@ -352,11 +330,10 @@ public class BatchSimulation {
             }
 
             else if(e == ALL_EVENTS_CENTRALINO){ //arrivo dispatcher
-                //numberDispatcher++; //incremento contatore
-                //System.out.println("entrato in arrivo dispatcher");
-                event[ALL_EVENTS_CENTRALINO].x = 0; //non può esserci un altro arrivo al dispatcher senza che ci
-                //sia un' altra partenza dal centralino
-                //se number dispatcher è >= 1 dopo l'incremento, vuol dire che ho il server idle
+
+                event[ALL_EVENTS_CENTRALINO].x = 0;     //non può esserci un altro arrivo al dispatcher senza che ci
+                                                        //sia un' altra partenza dal centralino
+                                                        //se number dispatcher è >= 1 dopo l'incremento, vuol dire che ho il server idle
                 if (numberDispatcher == 1) {
                     //e quindi faccio il servizio = spawn evento completamento dispatcher
                     sum[ALL_EVENTS_CENTRALINO+EVENT_ARRIVE_DISPATCHER].served++;
@@ -375,12 +352,10 @@ public class BatchSimulation {
 
                 numberDispatcher--;
                 dispatched++;
-                //System.out.println("entrato in partenze dispatcher");
                 r.selectStream(10 + idx);
                 double rnd = r.random(); //mi dice se il job va on field oppure va remoto
                 double priority = r.random();
                 if(rnd<REMOTE_PROBABILITY){ //in remoto era 0.8
-                    //System.out.println("entrato ramo remoto");
                     if(priority < HIGH_PRIORITY_PROBABILITY){ //alta priorità
                         event[ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + 2].x = 1;
                         event[ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + 2].t = t.current;
@@ -397,7 +372,6 @@ public class BatchSimulation {
                     remoto++;
                 }
                 else{//on field
-                    //System.out.println("entrato ramo on field");
 
                     if(timestamp.primoArrivoField == 0){
                         timestamp.primoArrivoField = t.current;
@@ -417,7 +391,6 @@ public class BatchSimulation {
                         event[ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + ALL_EVENTS_REMOTE].t = t.current;
                     }
                     field++;
-                    //System.out.println("ho incrementato field a: " + field);
                 }
 
 
@@ -439,16 +412,14 @@ public class BatchSimulation {
             }
 
             else if(e == ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER){ //arrivo coda priorità bassa - remoto
-                //remoto++;
-                //System.out.println("entrato in arrivo coda bassa priorità");
+
                 event[ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER].x = 0; //non può esserci un altro arrivo in questa coda senza che ci
-                //sia un' altra partenza dal dispatcher
+                                                                            //sia un' altra partenza dal dispatcher
 
                 if(remoto <= SERVERS_REMOTI && abandonsRH.isEmpty() && abandonsRM.isEmpty()){
                     //processiamo i servizi
                     service = m.getServiceRemote(r, idx); //cambiare!
                     s = m.findOneRemoto(event);
-                    //System.out.println("s is: " + s);
                     sum[s].service +=service;
                     sum[s].served++;
                     event[s].t = t.current + service;
@@ -458,7 +429,6 @@ public class BatchSimulation {
                 }
                 else{
                     //genero abbandono se un job sta in coda
-                    //System.out.println("genero abbandono bassa");
                     double at = m.getAbandon(PATIENCE_LOW_REMOTO, r, idx) + t.current;
                     abandonsRL.add(at);
                 }
@@ -466,16 +436,13 @@ public class BatchSimulation {
             }
 
             else if(e == ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+1){ //arrivo coda priorità media - remoto
-                //remoto++;
-                //System.out.println("entrato in arrivo coda media priorità");
                 event[ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+1].x = 0; //non può esserci un altro arrivo in questa coda senza che ci
-                //sia un' altra partenza dal dispatcher
+                                                                            //sia un' altra partenza dal dispatcher
 
                 if(remoto <= SERVERS_REMOTI && abandonsRH.isEmpty()){
                     //processiamo i servizi
                     service = m.getServiceRemote(r, idx); //cambiare!
                     s = m.findOneRemoto(event);
-                    //System.out.println("s is: " + s);
                     sum[s].service +=service;
                     sum[s].served++;
                     event[s].t = t.current + service;
@@ -484,7 +451,6 @@ public class BatchSimulation {
                 }
                 else{
                     //genero abbandono se un job sta in coda
-                    //System.out.println("genero abbandono media");
                     double at = m.getAbandon(PATIENCE_MEDIUM_REMOTO, r, idx) + t.current;
                     abandonsRM.add(at);
                 }
@@ -492,14 +458,12 @@ public class BatchSimulation {
             }
 
             else if(e == ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+2){ //arrivo coda priorità alta - remoto
-                //remoto++;
-                //System.out.println("entrato in arrivo coda alta priorità");
                 event[ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+2].x = 0; //non può esserci un altro arrivo in questa coda senza che ci
-                //sia un' altra partenza dal dispatcher
+                                                                            //sia un' altra partenza dal dispatcher
 
                 if(remoto <= SERVERS_REMOTI){
                     //processiamo i servizi
-                    service = m.getServiceRemote(r, idx); //cambiare!
+                    service = m.getServiceRemote(r, idx);
                     s = m.findOneRemoto(event);
                     sum[s].service +=service;
                     sum[s].served++;
@@ -508,7 +472,6 @@ public class BatchSimulation {
 
                 }
                 if(remoto > SERVERS_REMOTI){
-                    //System.out.println("genero abbandono alta");
                     double at = m.getAbandon(PATIENCE_HIGH_REMOTO, r, idx) + t.current;
                     abandonsRH.add(at);
                 }
@@ -516,7 +479,6 @@ public class BatchSimulation {
             }
 
             else if(e == ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + EVENTS_ARRIVE_PRIORITY_CLASS_REMOTE + SERVERS_REMOTI){ //abbandono coda alta priorità remoto
-                //System.out.println("entrato in abbandono coda alta priorità");
                 remoto--;
                 abandonRH++;
                 abandonsRH.remove(abandonsRH.indexOf(Collections.min(abandonsRH))); //tolgo job dalla lista
@@ -526,7 +488,6 @@ public class BatchSimulation {
             }
 
             else if(e == ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + EVENTS_ARRIVE_PRIORITY_CLASS_REMOTE + SERVERS_REMOTI + 1){ //abbandono coda media priorità remoto
-                //System.out.println("entrato in abbandono coda media priorità");
                 remoto--;
                 abandonRM++;
                 abandonsRM.remove(abandonsRM.indexOf(Collections.min(abandonsRM))); //tolgo job dalla lista
@@ -536,7 +497,6 @@ public class BatchSimulation {
             }
 
             else if(e == ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + EVENTS_ARRIVE_PRIORITY_CLASS_REMOTE + SERVERS_REMOTI + 2){ //abbandono coda bassa priorità remoto
-                //System.out.println("entrato in abbandono coda bassa priorità");
                 remoto--;
                 abandonRL++;
                 abandonsRL.remove(abandonsRL.indexOf(Collections.min(abandonsRL))); //tolgo job dalla lista
@@ -546,7 +506,6 @@ public class BatchSimulation {
             }
 
             else if(e >= ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+EVENTS_ARRIVE_PRIORITY_CLASS_REMOTE && e < ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+EVENTS_ARRIVE_PRIORITY_CLASS_REMOTE+SERVERS_REMOTI){//completamento server remoto
-                //System.out.println("entrato in completamento server remoto");
 
                 if(timestamp.primoComplRemoto == 0){
                     timestamp.primoComplRemoto = t.current;
@@ -571,13 +530,13 @@ public class BatchSimulation {
                 }
 
                 //cleanup abbandoni
-                if(!abandonsRH.isEmpty() && abandonsRH.get(0) < t.current) { //minore o minore uguale?
+                if(!abandonsRH.isEmpty() && abandonsRH.get(0) < t.current) {
                     abandonsRH.remove(0);
                 }
-                if(!abandonsRM.isEmpty() && abandonsRM.get(0) < t.current) { //minore o minore uguale?
+                if(!abandonsRM.isEmpty() && abandonsRM.get(0) < t.current) {
                     abandonsRM.remove(0);
                 }
-                if(!abandonsRL.isEmpty() && abandonsRL.get(0) < t.current) { //minore o minore uguale?
+                if(!abandonsRL.isEmpty() && abandonsRL.get(0) < t.current) {
                     abandonsRL.remove(0);
                 }
 
@@ -607,15 +566,13 @@ public class BatchSimulation {
             }
 
             else if(e == ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE){ //arrivo coda priorità bassa - on field
-                //System.out.println("entrato in arrivo coda bassa priorità on field");
                 event[ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE].x = 0; //non può esserci un altro arrivo in questa coda senza che ci
-                //sia un' altra partenza dal dispatcher
+                                                                                            //sia un' altra partenza dal dispatcher
 
                 if(field <= SERVERS_FIELD_STD && abandonsFH.isEmpty() && abandonsFM.isEmpty()){ //la coda di priorità bassa vede solo i server standard
-                    //processiamo i servizi
-                    service = m.getServiceField(r, idx); //cambiare!
+                                                                                                //processiamo i servizi
+                    service = m.getServiceField(r, idx);
                     s = m.findOneFieldStd(event);
-                    //System.out.println("s is: " + s);
                     sum[s].service +=service;
                     sum[s].served++;
                     event[s].t = t.current + service;
@@ -625,7 +582,6 @@ public class BatchSimulation {
                 }
                 else{
                     //genero abbandono se un job sta in coda
-                    //System.out.println("genero abbandono bassa");
                     double at = m.getAbandon(PATIENCE_LOW_FIELD, r, idx) + t.current;
                     abandonsFL.add(at);
                 }
@@ -633,15 +589,13 @@ public class BatchSimulation {
             }
 
             else if(e == ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE + 1){ //arrivo coda priorità media - on field
-                //System.out.println("entrato in arrivo coda bassa priorità on field");
                 event[ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE + 1].x = 0; //non può esserci un altro arrivo in questa coda senza che ci
-                //sia un' altra partenza dal dispatcher
+                                                                                                //sia un' altra partenza dal dispatcher
 
                 if(field <= SERVERS_FIELD_STD && abandonsFH.isEmpty()){ //la coda di priorità media vede solo i server standard
-                    //processiamo i servizi
-                    service = m.getServiceField(r, idx); //cambiare!
+                                                                        //processiamo i servizi
+                    service = m.getServiceField(r, idx);
                     s = m.findOneFieldStd(event);
-                    //System.out.println("s is: " + s);
                     sum[s].service +=service;
                     sum[s].served++;
                     event[s].t = t.current + service;
@@ -651,7 +605,6 @@ public class BatchSimulation {
                 }
                 else{
                     //genero abbandono se un job sta in coda
-                    //System.out.println("genero abbandono bassa");
                     double at = m.getAbandon(PATIENCE_MEDIUM_FIELD, r, idx) + t.current;
                     abandonsFM.add(at);
                 }
@@ -659,15 +612,14 @@ public class BatchSimulation {
             }
 
             else if(e == ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE + 2){ //arrivo coda priorità alta - on field
-                //System.out.println("entrato in arrivo coda bassa priorità on field");
+                                                                                            //System.out.println("entrato in arrivo coda bassa priorità on field");
                 event[ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE + 2].x = 0; //non può esserci un altro arrivo in questa coda senza che ci
-                //sia un' altra partenza dal dispatcher
+                                                                                                //sia un' altra partenza dal dispatcher
 
                 if(field <= SERVERS_FIELD_STD + SERVERS_FIELD_SPECIAL){ //la coda di priorità alta vede i server standard + quelli dedicati
-                    //processiamo i servizi
+                                                                        //processiamo i servizi
                     service = m.getServiceField(r, idx); //cambiare!
                     s = m.findOneFieldSpecial(event);
-                    //System.out.println("s is: " + s);
                     sum[s].service +=service;
                     sum[s].served++;
                     event[s].t = t.current + service;
@@ -677,7 +629,6 @@ public class BatchSimulation {
                 }
                 else{
                     //genero abbandono se un job sta in coda
-                    //System.out.println("genero abbandono bassa");
                     double at = m.getAbandon(PATIENCE_HIGH_FIELD, r, idx) + t.current;
                     abandonsFH.add(at);
                 }
@@ -685,9 +636,7 @@ public class BatchSimulation {
             }
 
             else if(e == ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE+EVENTS_ARRIVE_PRIORITY_CLASS_FIELD+SERVERS_FIELD_SPECIAL+SERVERS_FIELD_STD){ //abbandono coda bassa priorità field
-                //System.out.println("entrato in abbandono coda bassa priorità field");
                 field--;
-                //System.out.println("ho decrementato field a: " + field);
                 abandonFL++;
                 abandonsFL.remove(abandonsFL.indexOf(Collections.min(abandonsFL))); //tolgo job dalla lista
                 if(abandonsFL.isEmpty()){
@@ -696,9 +645,7 @@ public class BatchSimulation {
             }
 
             else if(e == ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE+EVENTS_ARRIVE_PRIORITY_CLASS_FIELD+SERVERS_FIELD_SPECIAL+SERVERS_FIELD_STD + 1){ //abbandono coda media priorità field
-                //System.out.println("entrato in abbandono coda media priorità field");
                 field--;
-                //System.out.println("ho decrementato field a: " + field);
                 abandonFM++;
                 abandonsFM.remove(abandonsFM.indexOf(Collections.min(abandonsFM))); //tolgo job dalla lista
                 if(abandonsFM.isEmpty()){
@@ -707,9 +654,7 @@ public class BatchSimulation {
             }
 
             else if(e == ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE+EVENTS_ARRIVE_PRIORITY_CLASS_FIELD+SERVERS_FIELD_SPECIAL+SERVERS_FIELD_STD + 2){ //abbandono coda alta priorità field
-                //System.out.println("entrato in abbandono coda alta priorità field");
                 field--;
-                //System.out.println("ho decrementato field a: " + field);
                 abandonFH++;
                 abandonsFH.remove(abandonsFH.indexOf(Collections.min(abandonsFH))); //tolgo job dalla lista
                 if(abandonsFH.isEmpty()){
@@ -718,7 +663,6 @@ public class BatchSimulation {
             }
 
             else if(e >= ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE+EVENTS_ARRIVE_PRIORITY_CLASS_FIELD && e < ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE+EVENTS_ARRIVE_PRIORITY_CLASS_FIELD+SERVERS_FIELD_STD+SERVERS_FIELD_SPECIAL){//completamento server on field
-                //System.out.println("entrato in completamento server on field");
 
                 if(timestamp.primoComplField == 0){
                     timestamp.primoComplField = t.current;
@@ -727,7 +671,6 @@ public class BatchSimulation {
                 indexField++;
                 field--;
                 s = e;
-
 
                 //feedback on field
                 r.selectStream(17 + idx);
@@ -744,27 +687,25 @@ public class BatchSimulation {
 
 
                 //cleanup abbandoni
-                if(!abandonsFH.isEmpty() && abandonsFH.get(0) < t.current) { //minore o minore uguale?
+                if(!abandonsFH.isEmpty() && abandonsFH.get(0) < t.current) {
                     abandonsFH.remove(0);
                 }
-                if(!abandonsFM.isEmpty() && abandonsFM.get(0) < t.current) { //minore o minore uguale?
+                if(!abandonsFM.isEmpty() && abandonsFM.get(0) < t.current) {
                     abandonsFM.remove(0);
                 }
-                if(!abandonsFL.isEmpty() && abandonsFL.get(0) < t.current) { //minore o minore uguale?
+                if(!abandonsFL.isEmpty() && abandonsFL.get(0) < t.current) {
                     abandonsFL.remove(0);
                 }
                 int size = abandonsFH.size() + abandonsFL.size() + abandonsFM.size();
 
                 //servizio se c'è coda - comportamento server speciali
                 if(s>= 2 + SERVERS + 2 + 3 + 3 + SERVERS_REMOTI + 3 && s<  2 + SERVERS + 2 + 3 + 3 + SERVERS_REMOTI + 3 + SERVERS_FIELD_SPECIAL && !abandonsFH.isEmpty()){
-                    //if(!abandonsFH.isEmpty()){
 
                     abandonsFH.remove(0); //prendo un job dalla coda ad alta priorità
                     service         = m.getServiceField(r, idx);
                     sum[s].service += service;
                     sum[s].served++;
                     event[s].t      = t.current + service;
-                    // }
                 }
 
 
@@ -794,7 +735,6 @@ public class BatchSimulation {
 
 
             else {                                         /* process a callcenter departure */
-                //System.out.println("entrato in departures");
 
                 if (timestamp.primoComplCentralino == 0){
                     timestamp.primoComplCentralino = t.current;
@@ -802,10 +742,10 @@ public class BatchSimulation {
 
                 index++;                                     /* from server s       */
                 number--;
-                s                 = e; //indice next event = server id
-                event[ALL_EVENTS_CENTRALINO].t = t.current; //invio ticket al dispatcher
-                event[ALL_EVENTS_CENTRALINO].x = 1; //arrivo dispatcher elegibile per next event
-                numberDispatcher++; //incremento contatore
+                s                 = e;                        //indice next event = server id
+                event[ALL_EVENTS_CENTRALINO].t = t.current;   //invio ticket al dispatcher
+                event[ALL_EVENTS_CENTRALINO].x = 1;           //arrivo dispatcher elegibile per next event
+                numberDispatcher++;                           //incremento contatore
                 if(!abandons.isEmpty()) {
                     abandons.remove(0);
                 }
@@ -817,15 +757,13 @@ public class BatchSimulation {
                     sum[s].served++;
                     event[s].t      = t.current + service;
 
-
                 }
                 else {
                     event[s].x = 0;
                 }
             }
 
-
-            //System.out.println("FINE ITERAZIONE\n\n");
+            /* FINE ITERAZIONE */
         }
 
         WriteDoubleListToFile w = new WriteDoubleListToFile();
@@ -834,14 +772,12 @@ public class BatchSimulation {
         w.scrivi(utilCentralinoList, "batchUtilCent");
         w.scrivi(interarrivalCentralinoList, "batchInterCent");
         w.scrivi(numberJobCentralinoList, "batchNumberJobCent");
-        //w.scrivi(waitingCentralinoList, "batchWaitingCent");
 
         //DISPATCHER
         w.scrivi(responseTimeDispList, "batchResponseTimeDisp");
         w.scrivi(utilDispList, "batchUtilDisp");
         w.scrivi(interarrivalDispList, "batchInterDisp");
         w.scrivi(numberJobDispList, "batchNumberJobDisp");
-        //w.scrivi(waitingDispList, "batchWaitingDisp");
 
         //REMOTO
         w.scrivi(responseTimeRemotoList, "batchResponseTimeRemoto");
@@ -864,135 +800,9 @@ public class BatchSimulation {
 
         for(String str : names){
             System.out.println(str);
-            est.intervals(str);
+            est.intervals(str); //calcolo intervalli di confidenza
             System.out.println("\n------------------------------\n");
         }
-
-
-
-        DecimalFormat f = new DecimalFormat("###0.00");
-        DecimalFormat g = new DecimalFormat("###0.000");
-
-        /*
-          ****      ALCUNE STATISTICHE SONO FAKE *****
-         */
-
-        //double tFinalCentralino = 0.0;
-        double mediaCentralino = 0.0;
-        for(s = 2; s <= SERVERS+1; s++){
-            mediaCentralino += event[s].t;
-            if(event[s].t > tFinalCentralino){
-                tFinalCentralino = event[s].t;
-            }
-        }
-        mediaCentralino = mediaCentralino/SERVERS;
-
-
-        for(s = 2; s <= SERVERS+1; s++){
-
-            sumService += sum[s].service;
-
-        }
-        sumService = sumService/SERVERS;
-
-        realTimeCentralino = tFinalCentralino - timestamp.primoComplCentralino;
-        System.out.println("primo compl " + timestamp.primoComplCentralino);
-
-        System.out.println("\nfor " + index + " jobs the CENTRALINO statistics are:\n");
-        System.out.println("  avg interarrivals .. =   " + f.format(event[0].t / index));
-        System.out.println("  avg wait (response time) ........... =   " + f.format(area / index));
-        System.out.println("  avg # in centralino ...... =   " + f.format(area / realTimeCentralino));
-        System.out.println("  real time " + realTimeCentralino);
-
-        for (s = 2; s <= SERVERS+1; s++) {      /* adjust area to calculate */
-            area -= sum[s].service;              /* averages for the queue   */
-        }
-
-        double realTimeDispatcher = event[2+SERVERS+1].t-timestamp.primoComplDisp; //ultimo - primo completamento dispatcher
-        System.out.println("Real time dispatcher: " + realTimeDispatcher);
-
-        System.out.println("\nfor " + dispatched + " jobs the DISPATCHER statistics are:\n");
-        System.out.println("  avg interarrivals .. =   " + f.format(realTimeDispatcher / dispatched));
-        System.out.println("  avg wait (response time)........... =   " + f.format(areaDispatcher / dispatched));
-        System.out.println("  avg # in node ...... =   " + f.format(areaDispatcher / realTimeDispatcher )); //event[2+SERVERS+1].t
-
-
-        areaDispatcher -= sum[ALL_EVENTS_CENTRALINO+1].service;
-
-
-        double tFinalRemoto = 0.0;
-        double mediaRemoto = 0.0;
-        for(s = SERVERS + 7; s < SERVERS+7+SERVERS_REMOTI; s++){
-            mediaRemoto += event[s].t;
-            if(event[s].t > tFinalRemoto){
-                tFinalRemoto = event[s].t;
-            }
-        }
-        double lastArrivalRemoto = 0.0;
-        for(s = 2 + SERVERS + 2; s<= 2 + SERVERS + 2 + 2; s++){
-            if(event[s].t> lastArrivalRemoto){
-                lastArrivalRemoto = event[s].t;
-            }
-        }
-        mediaRemoto = mediaRemoto/SERVERS_REMOTI;
-
-        System.out.println("  avg interarrivals .. =   " + f.format((lastArrivalRemoto-timestamp.primoComplDisp) / indexRemoto));
-        System.out.println("  avg wait (service time) ........... =   " + f.format(areaRemoto / indexRemoto));
-        System.out.println("  avg # in node ...... =   " + f.format(areaRemoto / (tFinalRemoto-timestamp.primoComplRemoto)));
-        System.out.println("area remoto queue= " + areaRemotoQueue + " acchittamento: " + f.format(areaRemotoQueue /  (tFinalRemoto-timestamp.primoComplRemoto)));
-
-        double tFinalField = 0.0;
-        double mediaField = 0.0;
-        for(s = ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + ALL_EVENTS_REMOTE + EVENTS_ARRIVE_PRIORITY_CLASS_FIELD; s < ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + ALL_EVENTS_REMOTE + EVENTS_ARRIVE_PRIORITY_CLASS_FIELD + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD; s++){
-            mediaField += event[s].t;
-            if(event[s].t > tFinalField){
-                tFinalField = event[s].t;
-            }
-        }
-        mediaField = mediaField/SERVERS_FIELD_STD+SERVERS_FIELD_SPECIAL;
-
-        double lastArrivalField = 0.0;
-        int i = 0;
-        for(s = ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + ALL_EVENTS_REMOTE; s< ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + ALL_EVENTS_REMOTE + EVENTS_ARRIVE_PRIORITY_CLASS_FIELD; s++){
-            i++;
-            if(event[s].t> lastArrivalField){
-                lastArrivalField = event[s].t;
-            }
-        }
-
-        System.out.println("\nfor " + indexField + " jobs the FIELD statistics are:\n");
-        System.out.println("  avg interarrivals .. =   " + f.format((lastArrivalField - timestamp.primoArrivoField) / indexField));
-        System.out.println("  avg wait ........... =   " + f.format((areaField) / indexField));
-        System.out.println("  avg # in node ...... =   " + f.format(areaField / (tFinalField - timestamp.primoComplField))); //9185 primo cmple
-
-        //System.out.println("area remoto queue= " + areaFieldQueue + " acchittamento: " + f.format(areaFieldQueue /  (tFinalField - 9185)));
-
-        /*for (s = 2; s <= SERVERS+1; s++) {
-            area -= sum[s].service;
-        }*/
-        for (s = ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + ALL_EVENTS_REMOTE + EVENTS_ARRIVE_PRIORITY_CLASS_FIELD; s < ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + ALL_EVENTS_REMOTE + EVENTS_ARRIVE_PRIORITY_CLASS_FIELD + SERVERS_FIELD_SPECIAL + SERVERS_FIELD_STD; s++) {
-            areaField -= sum[s].service;
-        }
-
-
-        System.out.println("  \navg # queue dispatcher: " + sum[SERVERS + 3].service/realTimeDispatcher);
-        System.out.println("  area disp: " + areaDispatcher);
-
-        System.out.println("  avg delay .......... =   " + f.format(area / index));
-        System.out.println("  avg # in queue ..... =   " + f.format(areaDispatcher / realTimeDispatcher));
-        System.out.println("  abandons ........... =   " + abandon);
-        System.out.println("  perc abandons centralino..=   " + (abandon/(dispatched+abandon)));
-        System.out.println("  abandons in FH........... =   " + abandonFH);
-        System.out.println("  abandons in FM........... =   " + abandonFM);
-        System.out.println("  abandons in FL........... =   " + abandonFL);
-        System.out.println("  abandons in RH........... =   " + abandonRH);
-        System.out.println("  abandons in RM........... =   " + abandonRM);
-        System.out.println("  abandons in RL........... =   " + abandonRL);
-        System.out.println("  il dispathcer ha servito ticket =   " + dispatched + " per un tempo" +
-                " totale di: " + sum[SERVERS + 3].service);
-        System.out.println("\nthe server statistics are:\n");
-        System.out.println("    server     utilization     avg service      share");
-        //il tempo dell'ultima uscita da un centralino
 
 
     }
