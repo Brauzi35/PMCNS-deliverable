@@ -14,29 +14,24 @@ import java.util.Collections;
 import java.util.List;
 
 import static model.SimulationValues.*;
-import static model.SimulationValues.SERVERS;
 
-public class Replicazione {
-
-
+public class ReplicazioneMiglioria {
     static List<FasciaOraria> fasce = new ArrayList<>();
 
     static List<Outputs> outputList = new ArrayList<>();
 
     static List<List<Double>> responseTimeCentralino = new ArrayList<>();
-    static List<List<Double>> responseTimeDispatcher = new ArrayList<>();
 
 
     /*
-        *** ORIZZONTE FINITO
-        * INDEX nelle fasce ok
-        * TEMPO GIORNATA INTERA 55800
+     *** ORIZZONTE FINITO
+     * INDEX nelle fasce ok
+     * TEMPO GIORNATA INTERA 55800
      */
 
     void simulation(int streamIndex){
 
         List<Double> respList = new ArrayList<>();
-        List<Double> respListDisp = new ArrayList<>();
         Outputs o = new Outputs();
 
         long   number = 0;             /* number in the node                 */
@@ -112,12 +107,10 @@ public class Replicazione {
 
         while ((event[0].x != 0) || (number + numberDispatcher + remoto + field != 0)) {
 
-            //respList.add(area/index); /*salva tutti i valori di response time
-                                        /*volta per volta in una lista che poi andrà
+            respList.add(area/index); /*salva tutti i valori di response time
+                                        volta per volta in una lista che poi andrà
                                         in una lista di liste per effettuare la media
                                        */
-
-            respListDisp.add(areaDispatcher/dispatched);
 
             if(field < 0){
                 System.out.println("field < 0");
@@ -227,7 +220,7 @@ public class Replicazione {
             else if(e == ALL_EVENTS_CENTRALINO){ //arrivo dispatcher
 
                 event[ALL_EVENTS_CENTRALINO].x = 0; //non può esserci un altro arrivo al dispatcher senza che ci
-                                                    //sia un' altra partenza dal centralino
+                //sia un' altra partenza dal centralino
                 //se number dispatcher è >= 1 dopo l'incremento, vuol dire che ho il server idle
                 if (numberDispatcher == 1) {
                     //e quindi faccio il servizio = spawn evento completamento dispatcher
@@ -309,7 +302,7 @@ public class Replicazione {
             else if(e == ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER){ //arrivo coda priorità bassa - remoto
 
                 event[ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER].x = 0; //non può esserci un altro arrivo in questa coda senza che ci
-                                                                            //sia un' altra partenza dal dispatcher
+                //sia un' altra partenza dal dispatcher
 
                 if(remoto <= SERVERS_REMOTI && abandonsRH.isEmpty() && abandonsRM.isEmpty()){
                     //processiamo i servizi
@@ -333,7 +326,7 @@ public class Replicazione {
             else if(e == ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+1){ //arrivo coda priorità media - remoto
 
                 event[ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+1].x = 0; //non può esserci un altro arrivo in questa coda senza che ci
-                                                                            //sia un' altra partenza dal dispatcher
+                //sia un' altra partenza dal dispatcher
 
                 if(remoto <= SERVERS_REMOTI && abandonsRH.isEmpty()){
                     //processiamo i servizi
@@ -355,7 +348,7 @@ public class Replicazione {
 
             else if(e == ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+2){ //arrivo coda priorità alta - remoto
                 event[ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+2].x = 0; //non può esserci un altro arrivo in questa coda senza che ci
-                                                                            //sia un' altra partenza dal dispatcher
+                //sia un' altra partenza dal dispatcher
 
                 if(remoto <= SERVERS_REMOTI){
                     //processiamo i servizi
@@ -462,10 +455,10 @@ public class Replicazione {
 
             else if(e == ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE){ //arrivo coda priorità bassa - on field
                 event[ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE].x = 0; //non può esserci un altro arrivo in questa coda senza che ci
-                                                                                            //sia un' altra partenza dal dispatcher
+                //sia un' altra partenza dal dispatcher
 
                 if(field <= SERVERS_FIELD_STD && abandonsFH.isEmpty() && abandonsFM.isEmpty()){ //la coda di priorità bassa vede solo i server standard
-                                                                                                //processiamo i servizi
+                    //processiamo i servizi
                     service = m.getServiceField(r, streamIndex);
                     s = m.findOneFieldStd(event);
                     sum[s].service +=service;
@@ -485,7 +478,7 @@ public class Replicazione {
 
             else if(e == ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE + 1){ //arrivo coda priorità media - on field
                 event[ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE + 1].x = 0; //non può esserci un altro arrivo in questa coda senza che ci
-                                                                                                //sia un' altra partenza dal dispatcher
+                //sia un' altra partenza dal dispatcher
 
                 if(field <= SERVERS_FIELD_STD && abandonsFH.isEmpty()){ //la coda di priorità media vede solo i server standard
                     //processiamo i servizi
@@ -508,7 +501,7 @@ public class Replicazione {
 
             else if(e == ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE + 2){ //arrivo coda priorità alta - on field
                 event[ALL_EVENTS_CENTRALINO+ALL_EVENTS_DISPATCHER+ALL_EVENTS_REMOTE + 2].x = 0; //non può esserci un altro arrivo in questa coda senza che ci
-                                                                                                    //sia un' altra partenza dal dispatcher
+                //sia un' altra partenza dal dispatcher
 
                 if(field <= SERVERS_FIELD_STD + SERVERS_FIELD_SPECIAL){ //la coda di priorità alta vede i server standard + quelli dedicati
                     //processiamo i servizi
@@ -638,9 +631,52 @@ public class Replicazione {
                 index++;                                     /* from server s       */
                 number--;
                 s                 = e;                      //indice next event = server id
-                event[ALL_EVENTS_CENTRALINO].t = t.current; //invio ticket al dispatcher
-                event[ALL_EVENTS_CENTRALINO].x = 1; //arrivo dispatcher elegibile per next event
-                numberDispatcher++; //incremento contatore
+
+                //invio ticket ai tecnici
+                r.selectStream(10 + streamIndex);
+                double rnd = r.random(); //mi dice se il job va on field oppure va remoto
+                double priority = r.random();
+                if(rnd<REMOTE_PROBABILITY){ //in remoto era 0.8
+                    //System.out.println("entrato ramo remoto");
+                    if(priority < HIGH_PRIORITY_PROBABILITY){ //alta priorità
+                        event[ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + 2].x = 1;
+                        event[ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + 2].t = t.current;
+
+                    }
+                    else if(priority < MEDIUM_PRIORITY_PROBABILITY){ //media priorità
+                        event[ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + 1].x = 1;
+                        event[ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + 1].t = t.current;
+                    }
+                    else{ //bassa priorità
+                        event[ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER].x = 1;
+                        event[ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER].t = t.current;
+                    }
+                    remoto++;
+                }
+                else{//on field
+                    //System.out.println("entrato ramo on field");
+
+                    if(timestamp.primoArrivoField == 0){
+                        timestamp.primoArrivoField = t.current;
+                    }
+
+                    if(priority < HIGH_PRIORITY_PROBABILITY){ //alta priorità
+                        event[ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + ALL_EVENTS_REMOTE + 2].x = 1;
+                        event[ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + ALL_EVENTS_REMOTE + 2].t = t.current;
+
+                    }
+                    else if(priority < MEDIUM_PRIORITY_PROBABILITY){ //media priorità
+                        event[ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + ALL_EVENTS_REMOTE + 1].x = 1;
+                        event[ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + ALL_EVENTS_REMOTE + 1].t = t.current;
+                    }
+                    else{ //bassa priorità
+                        event[ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + ALL_EVENTS_REMOTE].x = 1;
+                        event[ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + ALL_EVENTS_REMOTE].t = t.current;
+                    }
+                    field++;
+                    //System.out.println("ho incrementato field a: " + field);
+                }
+
                 if(!abandons.isEmpty()) {
                     abandons.remove(0);
                 }
@@ -657,14 +693,13 @@ public class Replicazione {
             }
         }
 
-        //responseTimeCentralino.add(respList);
-        responseTimeDispatcher.add(respListDisp);
+        responseTimeCentralino.add(respList);
 
         DecimalFormat f = new DecimalFormat("###0.00");
         DecimalFormat g = new DecimalFormat("###0.000");
 
         /*
-            ***** CENTRALINO *****
+         ***** CENTRALINO *****
          */
         double tFinalCentralino = 0.0;
         double mediaCentralino = 0.0;
@@ -681,7 +716,7 @@ public class Replicazione {
         double sumService = 0.0;
         for(s = 2; s <= SERVERS+1; s++){
 
-                sumService += sum[s].service;
+            sumService += sum[s].service;
 
         }
         sumService = sumService/SERVERS;
@@ -696,21 +731,10 @@ public class Replicazione {
             area -= sum[s].service;              /* averages for the queue   */
         }
 
-        /*
-           *****  DISPATCHER *****
-         */
 
-        double realTimeDispatcher = event[2+SERVERS+1].t-timestamp.primoComplDisp; //ultimo - primo completamento dispatcher
-
-        o.setResponseTimeDispatcher(areaDispatcher / dispatched);
-        o.setUtilizzazioneDispatcher(sum[SERVERS+3].service/realTimeDispatcher);
-        o.setInterarrivoDispatcher(realTimeDispatcher / dispatched);
-        o.setNumeroDispatcher(areaDispatcher / realTimeDispatcher);
-
-        areaDispatcher -= sum[ALL_EVENTS_CENTRALINO+1].service;
 
         /*
-                **** REMOTO *****
+         **** REMOTO *****
          */
 
         double tFinalRemoto = 0.0;
@@ -735,7 +759,7 @@ public class Replicazione {
         o.setNumeroRemoto(areaRemoto / (tFinalRemoto-timestamp.primoComplRemoto));
 
         /*
-           ****  FIELD *****
+         ****  FIELD *****
          */
         double tFinalField = 0.0;
         double mediaField = 0.0;
@@ -767,7 +791,7 @@ public class Replicazione {
         }
 
         /*
-               *** WAITING TIME *****
+         *** WAITING TIME *****
          */
         o.setWaitingTimeCentralino((area / index));
         o.setWaitingTimeDispatcher(areaDispatcher / dispatched);
@@ -785,59 +809,52 @@ public class Replicazione {
         for(int i = 0; i<1024; i++){
 
             System.out.println("eseguendo iterazione i = " + i);
-            Replicazione rep = new Replicazione();
+            ReplicazioneMiglioria rep = new ReplicazioneMiglioria();
             rep.simulation(i);
         }
 
+
         List<Double> responseTimeCentralinoList = new ArrayList<>();
-        List<Double> responseTimeDispList = new ArrayList<>();
         List<Double> responseTimeRemotoList = new ArrayList<>();
         List<Double> responseTimeFieldList = new ArrayList<>();
 
         List<Double> interarrivalCentralinoList = new ArrayList<>();
-        List<Double> interarrivalDispList = new ArrayList<>();
         List<Double> interarrivalRemotoList = new ArrayList<>();
         List<Double> interarrivalFieldList = new ArrayList<>();
 
         List<Double> utilCentralinoList = new ArrayList<>();
-        List<Double> utilDispList = new ArrayList<>();
         List<Double> utilRemotoList = new ArrayList<>();
         List<Double> utilFieldList = new ArrayList<>();
 
         List<Double> numberJobCentralinoList = new ArrayList<>();
-        List<Double> numberJobDispList = new ArrayList<>();
         List<Double> numberJobRemotoList = new ArrayList<>();
         List<Double> numberJobFieldList = new ArrayList<>();
 
         List<Double> waitingCentralinoList = new ArrayList<>();
-        List<Double> waitingJobDispList = new ArrayList<>();
         List<Double> waitingJobRemotoList = new ArrayList<>();
         List<Double> waitingJobFieldList = new ArrayList<>();
 
 
+
+
         for(int i = 0; i<1024; i++){
             responseTimeCentralinoList.add(outputList.get(i).getResponseTimeCentralino());
-            responseTimeDispList.add(outputList.get(i).getResponseTimeDispatcher());
             responseTimeRemotoList.add(outputList.get(i).getResponseTimeRemoto());
             responseTimeFieldList.add(outputList.get(i).getResponseTimeOnField());
 
             interarrivalCentralinoList.add(outputList.get(i).getInterarrivoCentralino());
-            interarrivalDispList.add(outputList.get(i).getInterarrivoDispatcher());
             interarrivalRemotoList.add(outputList.get(i).getInterarrivoRemoto());
             interarrivalFieldList.add(outputList.get(i).getInterarrivoOnField());
 
             utilCentralinoList.add(outputList.get(i).getUtilizzazioneCentralino());
-            utilDispList.add(outputList.get(i).getUtilizzazioneDispatcher());
             utilRemotoList.add(outputList.get(i).getUtilizzazioneRemoto());
             utilFieldList.add(outputList.get(i).getUtilizzazioneOnField());
 
             numberJobCentralinoList.add(outputList.get(i).getNumeroCentralino());
-            numberJobDispList.add(outputList.get(i).getNumeroDispatcher());
             numberJobRemotoList.add(outputList.get(i).getNumeroRemoto());
             numberJobFieldList.add(outputList.get(i).getNumeroOnField());
 
             waitingCentralinoList.add(outputList.get(i).getWaitingTimeCentralino());
-            waitingJobDispList.add(outputList.get(i).getWaitingTimeDispatcher());
             waitingJobRemotoList.add(outputList.get(i).getWaitingTimeRemoto());
             waitingJobFieldList.add(outputList.get(i).getWaitingTimeOnField());
 
@@ -845,36 +862,28 @@ public class Replicazione {
 
 
         List<Double> averagesRespCentralino = calculateIndexAverages(responseTimeCentralino);
-        List<Double> averagesRespDispatcher = calculateIndexAverages(responseTimeDispatcher);
 
         WriteDoubleListToFile wdltf = new WriteDoubleListToFile();
 
         wdltf.scrivi(averagesRespCentralino, "averagesRespCentralino");
-        wdltf.scrivi(averagesRespDispatcher, "averagesRespDispatcher70");
-
 
         wdltf.scrivi(responseTimeCentralinoList, "responseTimeCentralino");
-        wdltf.scrivi(responseTimeDispList, "responseTimeDisp");
         wdltf.scrivi(responseTimeRemotoList, "responseTimeRemoto");
         wdltf.scrivi(responseTimeFieldList, "responseTimeOnField");
 
         wdltf.scrivi(interarrivalCentralinoList, "interarrivoCentralino");
-        wdltf.scrivi(interarrivalDispList, "interarrivoDisp");
         wdltf.scrivi(interarrivalRemotoList, "interarrivoRemoto");
         wdltf.scrivi(interarrivalFieldList, "interarrivoOnField");
 
         wdltf.scrivi(utilCentralinoList, "utilCentralino");
-        wdltf.scrivi(utilDispList, "utilDisp");
         wdltf.scrivi(utilRemotoList, "utilRemoto");
         wdltf.scrivi(utilFieldList, "utilOnField");
 
         wdltf.scrivi(numberJobCentralinoList, "numberJobCentralino");
-        wdltf.scrivi(numberJobDispList, "numberJobDispatcher");
         wdltf.scrivi(numberJobRemotoList, "numberJobRemoto");
         wdltf.scrivi(numberJobFieldList, "numberJobOnField");
 
         wdltf.scrivi(waitingCentralinoList, "waitingCentralino");
-        wdltf.scrivi(waitingJobDispList, "waitingDispatcher");
         wdltf.scrivi(waitingJobRemotoList, "waitingJobRemoto");
         wdltf.scrivi(waitingJobFieldList, "waitingJobOnField");
 

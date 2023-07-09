@@ -20,7 +20,7 @@ public class BatchSimulation {
     static List<FasciaOraria> fasce = new ArrayList<>();
     static double PERC = 0.041; //perc è la percentuale di chiamate in quella fascia oraria--- 0.02 fascia idx 1 ---- 0.03 fascia idx 2 --- 0.041 fascia idx 20
 
-    public void batchSim(double perc) throws FileNotFoundException {
+    public void batchSim(double perc, int fascia) throws FileNotFoundException {
 
         List<Double> responseTimeCentralinoList = new ArrayList<>();
         List<Double> responseTimeDispList = new ArrayList<>();
@@ -105,7 +105,7 @@ public class BatchSimulation {
         MsqT t = new MsqT();
 
         t.current    = START;
-        event[0].t   = m.getArrival(r, t.current, idx);
+        event[0].t   = m.getArrivalBatch(r, t.current, idx, fascia);
         event[0].x   = 1;
 
         for (s = 1; s < ALL_EVENTS_CENTRALINO + ALL_EVENTS_DISPATCHER + ALL_EVENTS_REMOTE + ALL_EVENTS_FIELD; s++) { //messo il + 2 perchè ho aggiunto il dispatcher e +14 per i due centri dei guasti?
@@ -300,7 +300,7 @@ public class BatchSimulation {
 
             if (e == EVENT_ARRIVE_CENTRALINO-1) {                                  /* process a callcenter arrival*/
                 number++;
-                event[0].t        = m.getArrival(r, t.current, idx);
+                event[0].t        = m.getArrivalBatch(r, t.current, idx, fascia);
 
                 if(count == 132){
                     event[0].x = 0; //close the door
@@ -810,7 +810,7 @@ public class BatchSimulation {
     public static void main(String[] args) throws FileNotFoundException {
 
         BatchSimulation bs = new BatchSimulation();
-        bs.batchSim(PERC);
+        bs.batchSim(PERC, 1);
     }
 
     }

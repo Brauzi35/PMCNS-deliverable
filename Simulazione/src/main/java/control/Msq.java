@@ -843,7 +843,21 @@ class Msq {
 
         Rvms rvms = new Rvms();
         //index per tutte le fasce, altrimenti sostituisci l'indice della singola fascia
-        sarrival += rvms.idfPoisson(fasce.get(1).getMediaPoisson(), r.random());
+        sarrival += rvms.idfPoisson(fasce.get(index).getMediaPoisson(), r.random());
+        return (sarrival);
+    }
+
+    double getArrivalBatch(Rngs r, double currentTime, int streamIndex, int fascia) {
+        /* --------------------------------------------------------------
+         * generate the next arrival time with idfPoisson
+         * --------------------------------------------------------------
+         */
+        r.selectStream(0 + streamIndex);
+
+
+        Rvms rvms = new Rvms();
+        //index per tutte le fasce, altrimenti sostituisci l'indice della singola fascia
+        sarrival += rvms.idfPoisson(fasce.get(fascia).getMediaPoisson(), r.random());
         return (sarrival);
     }
 
@@ -855,7 +869,11 @@ class Msq {
          */
         Rvms rvms = new Rvms();
         r.selectStream(1 + streamIndex);
-        return rvms.idfLogNormal(CENTRALINO_MU_PARAM_LOGNORMAL, CENTRALINO_SIGMA_PARAM_LOGNORMAL, r.random());
+        double rd = r.random();
+        if(rd > 0.990){
+            rd = 0.990;
+        }
+        return rvms.idfLogNormal(CENTRALINO_MU_PARAM_LOGNORMAL, CENTRALINO_SIGMA_PARAM_LOGNORMAL, rd);
     }
 
     double getServiceField(Rngs r, int streamIndex){
@@ -873,7 +891,7 @@ class Msq {
         if(rd > 0.990){
             rd = 0.990;
         }
-        return rvms.idfLogNormal(REMOTE_MU_PARAM_LOGNORMAL, REMOTE_SIGMA_PARAM_LOGNORMAL, rd);
+        return (rvms.idfLogNormal(REMOTE_MU_PARAM_LOGNORMAL, REMOTE_SIGMA_PARAM_LOGNORMAL, rd));
 
     }
 
