@@ -45,16 +45,16 @@ public class GraphController {
         xAxis.setTickUnit(new NumberTickUnit(displayInterval)); // Imposta l'unità di tick sull'asse X
         plot.setDomainAxis(xAxis);
         ValueAxis yAxis = plot.getRangeAxis();
-        yAxis.setRange(200, 1200); // Imposta il range dell'asse Y da val1 a val2
+        yAxis.setRange(200, 1000); // Imposta il range dell'asse Y da val1 a val2
 
 
 
-        ChartFrame frame = new ChartFrame("Tempo di risposta 10:00 - 10:30", chart);
+        ChartFrame frame = new ChartFrame("Tempo di risposta Centralino 8:00 - 8:30", chart);
         frame.pack();
         frame.setVisible(true);
 
         try {   //stampa su file .png
-            File outputFile = new File("graficoDispResponseTimeCent10_00_10_30_80Server.png");
+            File outputFile = new File("graficoCentResponseTimeCent8_00_8_30_70Server.png");
             ChartUtils.saveChartAsPNG(outputFile, chart, 800, 600);
             System.out.println("Grafico esportato come immagine PNG");
         } catch (IOException e) {
@@ -72,7 +72,7 @@ public class GraphController {
 
     private static JFreeChart createChart(XYDataset dataset) {
         JFreeChart chart = ChartFactory.createXYLineChart(
-                "Tempo di risposta 10 - 10:30 ", // Titolo del grafico
+                "Tempo di risposta Centralino 8:00 - 8:30  ", // Titolo del grafico
                 "# job", // Etichetta asse X
                 "Tempo di risposta", // Etichetta asse Y
                 dataset, // Dataset dei dati
@@ -125,7 +125,7 @@ public class GraphController {
 
     public static void main(String[] args) {
         // Esempio di utilizzo
-        String filePath = "batchResponseTimeDisp"; // Path del file contenente i dati
+        String filePath = "batchResponseTimeCent"; // Path del file contenente i dati
         createGraph(filePath);
     }
 

@@ -764,6 +764,6 @@ public class BatchSimulationMiglioria {
     public static void main(String[] args) throws FileNotFoundException {
 
         BatchSimulationMiglioria bs = new BatchSimulationMiglioria();
-        bs.batchSim(PERC, 1);
+        bs.batchSim(PERC, 2);
     }
 }
